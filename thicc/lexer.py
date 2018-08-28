@@ -1,3 +1,5 @@
+from . import token
+
 class LexError(Exception):
     pass
 
@@ -13,11 +15,16 @@ class LexInvalidLiteralError(LexError):
 
 class Lexer():
 
-    punct = [';', '(', ')', '{', '}']
-    keywords = ['int', 'return']
-    intchars = ['0123456789']
-
     def __init__(self):
+        self.punct = {';':token.SemicolonP, 
+                    '(':token.OpenParenthesesP,
+                    ')':token.ClosedParenthesesP,
+                    '{':token.OpenBraceP,
+                    '}':token.ClosedBraceP}
+        self.keywords = {'int':token.IntK,
+                        'return':token.ReturnK}
+        self.intchars = ['0123456789']
+
         return
 
     def tokenize(self, inputStr):
@@ -27,11 +34,11 @@ class Lexer():
         readingLiteral = False
         for i in range(len(inputStr)):
             c = inputStr[i]
-            if c in self.punct:
+            if c in self.punct.keys():
                 if reading:
                     toks.append(self._tokExp(inputStr[start:i]))
                     reading = False
-                toks.append(Token(c))
+                toks.append(self.punct[c](c))
             elif c.isspace():
                 if reading:
                     toks.append(self._tokExp(inputStr[start:i]))
@@ -55,19 +62,11 @@ class Lexer():
 
 
     def _tokExp(self, exp):
-        if exp in self.keywords:
-            return Token(exp)
+        if exp in self.keywords.keys():
+            return self.keywords[exp](exp)
         else:
-            return Token(exp)
+            return token.Constant(exp)
 
-
-class Token():
-    val = None
-    def __init__(self, val=None):
-        self.val = val
-
-    def __repr__(self):
-        return str(self.val)
 
 if __name__ == "__main__":
 
