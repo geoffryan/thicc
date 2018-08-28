@@ -23,7 +23,7 @@ class Lexer():
                     '}':token.ClosedBraceP}
         self.keywords = {'int':token.IntK,
                         'return':token.ReturnK}
-        self.intchars = ['0123456789']
+        self.intchars = '0123456789'
 
         return
 
@@ -64,8 +64,10 @@ class Lexer():
     def _tokExp(self, exp):
         if exp in self.keywords.keys():
             return self.keywords[exp](exp)
+        elif all([c in self.intchars for c in exp]):
+            return token.IntC(exp)
         else:
-            return token.Constant(exp)
+            return token.Identifier(exp)
 
 
 if __name__ == "__main__":

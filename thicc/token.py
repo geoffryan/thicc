@@ -36,6 +36,13 @@ class IntK(Keyword):
     pass
 
 #
+# Constants
+#
+
+class IntC(Constant):
+    pass
+
+#
 # Punctuators
 #
 

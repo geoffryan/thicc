@@ -1,17 +1,48 @@
 #!/usr/bin/env python
 import sys
-import thicc.lexer as lexer
+import argparse as ag
+import thicc.lexer
+import thicc.parser
+
+def runLexer(filename):
+    with open(filename, "r") as f:
+        text = f.read()
+
+    lex = thicc.lexer.Lexer()
+    toks = lex.tokenize(text)
+    print(toks)
+
+def runParser(filename):
+    with open(filename, "r") as f:
+        text = f.read()
+
+    lex = thicc.lexer.Lexer()
+    parser = thicc.parser.Parser()
+
+    toks = lex.tokenize(text)
+    ast = parser.parse(toks)
+
+    print(ast)
 
 
-if len(sys.argv) < 2:
-    print("usage: thicc src.c")
-    sys.exit()
+if __name__ == "__main__":
 
-with open(sys.argv[1], "r") as f:
-    text = f.read()
+    ap = ag.ArgumentParser(description="Compile C code.")
+    ap.add_argument("--lex", action='store_true')
+    ap.add_argument("--parse", action='store_true')
+    ap.add_argument("input_files", nargs='+')
+    ap.parse_args(" ".join(sys.argv))
+    args = ap.parse_args()
 
-lex = lexer.Lexer()
-toks = lex.tokenize(text)
-print(toks)
+    if args.lex:
+        for fname in args.input_files:
+            runLexer(fname)
 
+    if args.parse:
+        for fname in args.input_files:
+            runParser(fname)
+
+    if not args.lex and not args.parse:
+        print("Not Implemented Yet.")
+        sys.exit()
 
