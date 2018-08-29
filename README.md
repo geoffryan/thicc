@@ -1,15 +1,34 @@
-### thicc ###
+## thicc ##
 
-A C compiler written in Python, hopefully with many tests.
+An x86_64 C compiler written in Python, hopefully with many tests.
 
-# Install
+Currently works for a small subset of C: 
+* Programs
+    - A single `.c` file with a single function
+* Functions
+    - `int` returning functions with no arguments and a single statement
+* Statements
+    - The `return` statement, which contains a single expression.
+* Expressions
+    - Integer constants
+    - Unary operations '-!~' on integer constants.
+
+They cannot yet print their output!  To check a program has correctly compiled, check the return code with `$?`:
+```bash
+$ thicc return_42.c
+$ ./a.out
+$ echo $?
+42
+```
+
+### Install
 
 To install for development:
 ```bash
 $ python setup.py develop
 ```
 
-# Run
+### Run
 
 This package will install the `thicc` command, which emulates the basic behviour of `gcc`:
 ```bash
@@ -20,7 +39,7 @@ Additionally, passing `--lex` or `--parse` will only run the lexer or parser and
 
 
 
-# Tests
+### Tests
 
 From the project directory, run:
 ```bash
