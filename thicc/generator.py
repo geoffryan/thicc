@@ -62,25 +62,67 @@ class Generator():
     def generateExpression(self, expr):
         if isinstance(expr, symbol.ConstantE):
             val = expr.value.val
-            code = "movl\t${0:s}, %eax\n".format(val)
+            code = "movl     ${0:s}, %eax\n".format(val)
         elif isinstance(expr, symbol.UnaryOpE):
-            codeSet = self.generateExpression(expr.expr)
-            op = expr.op
-            if isinstance(op, token.NotP):
-                codeOp  = "cmpl\t$0, %eax\n"
-                codeOp += "movl\t$0, %eax\n"
-                codeOp += "sete\t%al\n"
-            elif isinstance(op, token.NegP):
-                codeOp = "neg\t%eax\n"
-            elif isinstance(op, token.ComplementP):
-                codeOp = "not\t%eax\n"
-            else:
-                raise UnknownExpressionError(expr)
-            code = codeSet+codeOp
+            code = self.unaryOpCode(expr)
+        elif isinstance(expr, symbol.BinaryOpE):
+            code = self.binaryOpCode(expr)
         else:
             raise UnknownExpressionError(expr)
 
         return code
+
+    def unaryOpCode(self, expr):
+
+        codeSet = self.generateExpression(expr.expr)
+        op = expr.op
+        if isinstance(op, token.NotP):
+            codeOp  = "cmpl     $0, %eax\n"
+            codeOp += "movl     $0, %eax\n"
+            codeOp += "sete     %al\n"
+        elif isinstance(op, token.NegP):
+            codeOp =  "neg      %eax\n"
+        elif isinstance(op, token.ComplementP):
+            codeOp =  "not      %eax\n"
+        else:
+            raise UnknownExpressionError(expr)
+        code = codeSet+codeOp
+
+        return code
+
+    def binaryOpCode(self, expr):
+
+        op = expr.op
+        e1 = expr.expr1
+        e2 = expr.expr2
+
+        codeSet1 = self.generateExpression(e1)
+        codePush1 = "pushq    %rax\n"
+        codeSet2 = self.generateExpression(e2)
+        codePop1  = "popq     %rcx\n"
+
+        if isinstance(op, token.AddP):
+            codeOp = "addl     %ecx, %eax\n"
+        elif isinstance(op, token.NegP):
+            codeOp = "subl     %eax, %ecx\n"
+            codeOp += "movl     %ecx, %eax\n"
+        elif isinstance(op, token.MultP):
+            codeOp = "imull    %ecx, %eax\n"
+        elif isinstance(op, token.DivP):
+            #swap e2 and e1 so e1 is in eax
+            codeOp  = "movl     %ecx, %edx\n"
+            codeOp += "movl     %eax, %ecx\n"
+            codeOp += "movl     %edx, %eax\n"
+            #zero out rdx
+            codeOp += "movl     $0, %edx\n"
+            #divide!
+            codeOp += "idivl    %ecx\n"
+        else:
+            raise UnknownExpressionError(expr)
+
+        code = codeSet1+codePush1+codeSet2+codePop1+codeOp
+        return code
+
 
 
 

@@ -22,6 +22,15 @@ class TestThicc(unittest.TestCase):
         path = "test/data/stage_2/"
         self.runSampleTestsInvalid(path)
     
+    
+    def test_stage3_valid(self):
+        path = "test/data/stage_3/"
+        self.runSampleTestsValid(path)
+
+    def test_stage3_invalid(self):
+        path = "test/data/stage_3/"
+        self.runSampleTestsInvalid(path)
+    
 
     def runSampleTestsValid(self, rootpath):
         path = rootpath+"valid/"
