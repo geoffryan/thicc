@@ -13,6 +13,16 @@ class TestThicc(unittest.TestCase):
         path = "test/data/stage_1/"
         self.runSampleTestsInvalid(path)
 
+    """
+    def test_stage2_valid(self):
+        path = "test/data/stage_2/"
+        self.runSampleTestsValid(path)
+
+    def test_stage2_invalid(self):
+        path = "test/data/stage_2/"
+        self.runSampleTestsInvalid(path)
+    """
+
     def runSampleTestsValid(self, rootpath):
         path = rootpath+"valid/"
         files = os.listdir(path)

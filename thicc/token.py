@@ -46,10 +46,10 @@ class IntC(Constant):
 # Punctuators
 #
 
-class BraceP(Punctuator):
+class SemicolonP(Punctuator):
     pass
 
-class SemicolonP(Punctuator):
+class BraceP(Punctuator):
     pass
 
 class OpenBraceP(BraceP):
@@ -67,3 +67,14 @@ class OpenParenthesesP(ParenthesesP):
 class ClosedParenthesesP(ParenthesesP):
     pass
 
+class UnaryOpP(Punctuator):
+    pass
+
+class NotP(UnaryOpP):
+    pass
+
+class NegationP(UnaryOpP):
+    pass
+
+class ComplementP(UnaryOpP):
+    pass

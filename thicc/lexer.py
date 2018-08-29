@@ -20,12 +20,13 @@ class Lexer():
                     '(':token.OpenParenthesesP,
                     ')':token.ClosedParenthesesP,
                     '{':token.OpenBraceP,
-                    '}':token.ClosedBraceP}
+                    '}':token.ClosedBraceP,
+                    '!':token.NotP,
+                    '~':token.ComplementP,
+                    '-':token.NegationP}
         self.keywords = {'int':token.IntK,
                         'return':token.ReturnK}
         self.intchars = '0123456789'
-
-        return
 
     def tokenize(self, inputStr):
         toks = []
@@ -57,6 +58,8 @@ class Lexer():
                     readingLiteral = True
                 else:
                     readingLiteral = False
+        if reading:
+            toks.append(self._tokExp(inputStr[start:]))
 
         return toks
 
@@ -69,21 +72,3 @@ class Lexer():
         else:
             return token.Identifier(exp)
 
-
-if __name__ == "__main__":
-
-    import sys
-
-    if len(sys.argv) > 1:
-        fname = sys.argv[1]
-
-        print("Hello")
-
-        with open(fname, "r") as f:
-            text = f.read()
-
-        print(text)
-
-        lex = Lexer()
-        toks = lex.tokenize(text)
-        print(toks)
