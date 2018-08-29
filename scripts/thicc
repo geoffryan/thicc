@@ -2,41 +2,27 @@
 import sys
 import subprocess
 import argparse as ag
-import thicc.lexer
-import thicc.parser
-import thicc.generator
+import thicc
 
 def runLexer(filename):
     with open(filename, "r") as f:
         text = f.read()
 
-    lex = thicc.lexer.Lexer()
-    toks = lex.tokenize(text)
+    toks = thicc.lex(text)
     print(toks)
 
 def runParser(filename):
     with open(filename, "r") as f:
         text = f.read()
 
-    lex = thicc.lexer.Lexer()
-    parser = thicc.parser.Parser()
-
-    toks = lex.tokenize(text)
-    ast = parser.parse(toks)
-
+    ast = thicc.parse(text)
     print(ast)
 
 def compile(filename, outname=None):
     with open(filename, "r") as f:
         text = f.read()
 
-    lex = thicc.lexer.Lexer()
-    parser = thicc.parser.Parser()
-    generator = thicc.generator.Generator()
-
-    toks = lex.tokenize(text)
-    ast = parser.parse(toks)
-    code = generator.generate(ast)
+    code = thicc.compileC(text)
 
     sname = filename.split("/")[-1]
     if sname[-2:] == ".c":
