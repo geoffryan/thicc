@@ -1,5 +1,5 @@
 from . import token
-from . import ast
+from . import symbol
 
 class ParseError(Exception):
     pass
@@ -39,7 +39,7 @@ class Parser():
 
     def parseProgram(self, tokens):
         func = self.parseFunction(tokens)
-        return ast.Program(func)
+        return symbol.Program(func)
 
     def parseFunction(self, tokens):
         tok = tokens.pop()
@@ -68,7 +68,7 @@ class Parser():
         if not isinstance(tok, token.ClosedBraceP):
             raise InvalidFunctionError(tok.val)
 
-        return ast.Function(ident, body)
+        return symbol.Function(ident, body)
 
     def parseStatement(self, tokens):
         tok = tokens.pop()
@@ -82,13 +82,13 @@ class Parser():
         if not isinstance(tok, token.SemicolonP):
             raise InvalidStatementError(tok.val)
 
-        return ast.ReturnS(expr)
+        return symbol.ReturnS(expr)
 
 
     def parseExpression(self, tokens):
         tok = tokens.pop()
         if not isinstance(tok, token.Constant):
             raise InvalidExpressionError(tok.val)
-        return ast.ConstantE(tok)
+        return symbol.ConstantE(tok)
 
 
