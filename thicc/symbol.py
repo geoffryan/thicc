@@ -3,6 +3,12 @@ class ASTNode():
     def __init__(self):
         pass
 
+    def __eq__(self, other):
+        if isinstance(other, self.__class__)\
+                and self.__dict__==other.__dict__:
+            return True
+        return False
+
 class Expression(ASTNode):
     def __init__(self):
         self.terminal = False

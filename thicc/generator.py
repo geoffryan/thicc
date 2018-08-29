@@ -70,7 +70,7 @@ class Generator():
                 codeOp  = "cmpl\t$0, %eax\n"
                 codeOp += "movl\t$0, %eax\n"
                 codeOp += "sete\t%al\n"
-            elif isinstance(op, token.NegationP):
+            elif isinstance(op, token.NegP):
                 codeOp = "neg\t%eax\n"
             elif isinstance(op, token.ComplementP):
                 codeOp = "not\t%eax\n"

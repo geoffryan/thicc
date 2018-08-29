@@ -1,10 +1,17 @@
 
 class Token():
-    def __init__(self, val=None):
-        self.val = val
+
+    def __init__(self):
+        self.val = None
 
     def __str__(self):
         return str(self.val)
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__)\
+                and self.val==other.val:
+            return True
+        return False
 
 #
 # Top-level Grammar Elements
@@ -14,10 +21,12 @@ class Keyword(Token):
     pass
 
 class Identifier(Token):
-    pass
+    def __init__(self, val):
+        self.val = val
 
 class Constant(Token):
-    pass
+    def __init__(self, val):
+        self.val = val
 
 class StringLtrl(Token):
     pass
@@ -30,10 +39,12 @@ class Punctuator(Token):
 #
 
 class ReturnK(Keyword):
-    pass
+    def __init__(self):
+        self.val = 'return'
 
 class IntK(Keyword):
-    pass
+    def __init__(self):
+        self.val = 'int'
 
 #
 # Constants
@@ -47,34 +58,64 @@ class IntC(Constant):
 #
 
 class SemicolonP(Punctuator):
-    pass
+    def __init__(self):
+        self.val = ';'
 
 class BraceP(Punctuator):
     pass
 
 class OpenBraceP(BraceP):
-    pass
+    def __init__(self):
+        self.val = '}'
 
 class ClosedBraceP(BraceP):
-    pass
+    def __init__(self):
+        self.val = '}'
 
 class ParenthesesP(Punctuator):
     pass
 
 class OpenParenthesesP(ParenthesesP):
-    pass
+    def __init__(self):
+        self.val = '('
 
 class ClosedParenthesesP(ParenthesesP):
+    def __init__(self):
+        self.val = ')'
+
+class OperatorP(Punctuator):
     pass
 
-class UnaryOpP(Punctuator):
+# Unary Operations
+
+class UnaryOpP(OperatorP):
     pass
 
 class NotP(UnaryOpP):
-    pass
+    def __init__(self):
+        self.val = '!'
 
-class NegationP(UnaryOpP):
-    pass
+class NegP(UnaryOpP):
+    def __init__(self):
+        self.val = '-'
 
 class ComplementP(UnaryOpP):
+    def __init__(self):
+        self.val = '~'
+
+#Binary Operations
+
+class BinaryOpP(OperatorP):
     pass
+
+class AddP(BinaryOpP):
+    def __init__(self):
+        self.val = '+'
+
+class MultP(BinaryOpP):
+    def __init__(self):
+        self.val = '*'
+
+class DivP(BinaryOpP):
+    def __init__(self):
+        self.val = '/'

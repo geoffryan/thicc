@@ -36,8 +36,11 @@ class TestLexer(unittest.TestCase):
         self.compareSingleToken('(', token.OpenParenthesesP)
         self.compareSingleToken(')', token.ClosedParenthesesP)
         self.compareSingleToken('!', token.NotP)
-        self.compareSingleToken('-', token.NegationP)
+        self.compareSingleToken('-', token.NegP)
         self.compareSingleToken('~', token.ComplementP)
+        self.compareSingleToken('+', token.AddP)
+        self.compareSingleToken('*', token.MultP)
+        self.compareSingleToken('/', token.DivP)
 
     def test_keywork_single(self):
         self.compareSingleToken('return', token.ReturnK)
@@ -55,7 +58,7 @@ class TestLexer(unittest.TestCase):
         self.compareSingleToken('DEF', token.Identifier)
         self.compareSingleToken('x2', token.Identifier)
 
-    def test_unaryop(self):
+    def test_unaryOp(self):
         txt = "!a"
         cls = [token.NotP, token.Identifier]
         val = ["", 'a']
@@ -65,12 +68,26 @@ class TestLexer(unittest.TestCase):
         val = ["", "5"]
         self.compareMultiToken(txt, cls, val)
         txt = " a-\t4 "
-        cls = [token.Identifier, token.NegationP, token.IntC]
+        cls = [token.Identifier, token.NegP, token.IntC]
         val = ["a", "", "4"]
         self.compareMultiToken(txt, cls, val)
         txt = "!!a"
         cls = [token.NotP, token.NotP, token.Identifier]
         val = ["", "", 'a']
+        self.compareMultiToken(txt, cls, val)
+
+    def test_binaryOp(self):
+        txt = "1+3"
+        cls = [token.IntC, token.AddP, token.IntC]
+        val = ["1", "", "3"]
+        self.compareMultiToken(txt, cls, val)
+        txt = " a * b\t"
+        cls = [token.Identifier, token.MultP, token.Identifier]
+        val = ["a", "", "b"]
+        self.compareMultiToken(txt, cls, val)
+        txt = "42/x"
+        cls = [token.IntC, token.DivP, token.Identifier]
+        val = ["42", "", "x"]
         self.compareMultiToken(txt, cls, val)
 
     def test_whitespace(self):
@@ -109,7 +126,7 @@ class TestLexer(unittest.TestCase):
         val = ["","func","","","a","","","","","365","",""]
         cls = [token.IntK, token.Identifier, token.OpenParenthesesP,
                 token.IntK, token.Identifier, token.ClosedParenthesesP,
-                token.OpenBraceP, token.ReturnK, token.NegationP, token.IntC,
+                token.OpenBraceP, token.ReturnK, token.NegP, token.IntC,
                 token.SemicolonP, token.ClosedBraceP]
         self.compareMultiToken(txt, cls, val)
 

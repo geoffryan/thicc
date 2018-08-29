@@ -23,7 +23,10 @@ class Lexer():
                     '}':token.ClosedBraceP,
                     '!':token.NotP,
                     '~':token.ComplementP,
-                    '-':token.NegationP}
+                    '-':token.NegP,
+                    '+':token.AddP,
+                    '*':token.MultP,
+                    '/':token.DivP}
         self.keywords = {'int':token.IntK,
                         'return':token.ReturnK}
         self.intchars = '0123456789'
@@ -39,7 +42,7 @@ class Lexer():
                 if reading:
                     toks.append(self._tokExp(inputStr[start:i]))
                     reading = False
-                toks.append(self.punct[c](c))
+                toks.append(self.punct[c]())
             elif c.isspace():
                 if reading:
                     toks.append(self._tokExp(inputStr[start:i]))
@@ -66,7 +69,7 @@ class Lexer():
 
     def _tokExp(self, exp):
         if exp in self.keywords.keys():
-            return self.keywords[exp](exp)
+            return self.keywords[exp]()
         elif all([c in self.intchars for c in exp]):
             return token.IntC(exp)
         else:
