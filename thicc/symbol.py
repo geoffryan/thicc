@@ -56,7 +56,39 @@ class Program(ASTNode):
 # Expressions
 #
 
-class ConstantE(Expression):
+class BinaryOpE(Expression):
+    def __init__(self, opTok, expr1, expr2):
+        super().__init__()
+        self.op = opTok
+        self.expr1 = expr1
+        self.expr2 = expr2
+
+    def __str__(self, level=0):
+        buf = level * "   "
+        out = buf + "Expression(BinaryOp): " + self.op.val + '\n'
+        out += self.term1.__str__(level=level+1)
+        out += self.term2.__str__(level=level+1)
+        return out
+
+class SumE(BinaryOpE,Expression):
+    pass
+
+class SubtractE(BinaryOpE,Expression):
+    pass
+
+class TermE(Expression):
+    pass
+
+class MultE(BinaryOpE,TermE):
+    pass
+
+class DivE(BinaryOpE,TermE):
+    pass
+
+class FactorE(TermE):
+    pass
+
+class ConstantE(FactorE):
     def __init__(self, tok):
         super().__init__()
         self.terminal = True
@@ -67,7 +99,7 @@ class ConstantE(Expression):
         out = buf + "Expression(Constant): " + self.value.val
         return out
 
-class UnaryOpE(Expression):
+class UnaryOpE(FactorE):
     def __init__(self, opTok, expr):
         super().__init__()
         self.op = opTok

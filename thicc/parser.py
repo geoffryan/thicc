@@ -24,6 +24,11 @@ class InvalidProgramError(ParseError):
         self.expression = expr
         self.message = message
 
+class UnmatchedParenthesesError(ParseError):
+    def __init__(self, expr, message="Parentheses block is not closed"):
+        self.expression = expr
+        self.message = message
+
 class Parser():
 
     def __init__(self):
@@ -84,12 +89,51 @@ class Parser():
 
         return symbol.ReturnS(expr)
 
-
     def parseExpression(self, tokens):
+        expr = self.parseTerm(tokens)
+        if len(tokens) > 0:
+            tok = tokens.pop()
+            while isinstance(tok,token.AddP) or isinstance(tok,token.NegP):
+                term = self.parseTerm(tokens)
+                expr = symbol.BinaryOpE(tok, expr, term)
+                if len(tokens) > 0:
+                    tok = tokens.pop()
+                else:
+                    tok = None
+                    break
+            if tok is not None:
+                tokens.append(tok)
+
+        return expr
+
+    def parseTerm(self, tokens):
+        term = self.parseFactor(tokens)
+        if len(tokens) > 0:
+            tok = tokens.pop()
+            while isinstance(tok,token.MultP) or isinstance(tok,token.DivP):
+                fac = self.parseFactor(tokens)
+                term = symbol.BinaryOpE(tok, term, fac)
+                if len(tokens) > 0:
+                    tok = tokens.pop()
+                else:
+                    tok = None
+                    break
+            if tok is not None:
+                tokens.append(tok)
+
+        return term
+
+    def parseFactor(self, tokens):
         tok = tokens.pop()
-        if isinstance(tok, token.UnaryOpP):
-            expr = self.parseExpression(tokens)
-            return symbol.UnaryOpE(tok, expr)
+        if isinstance(tok, token.OpenParenthesesP):
+            fac = self.parseExpression(tokens)
+            tok = tokens.pop()
+            if not isinstance(tok, token.ClosedParenthesesP):
+                raise UnmatchedParthenthesesError(tok.val)
+            return fac
+        elif isinstance(tok, token.UnaryOpP):
+            fac = self.parseFactor(tokens)
+            return symbol.UnaryOpE(tok, fac)
         elif isinstance(tok, token.Constant):
             return symbol.ConstantE(tok)
         raise InvalidExpressionError(tok.val)

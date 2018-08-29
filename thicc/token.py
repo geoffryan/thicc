@@ -83,19 +83,24 @@ class ClosedParenthesesP(ParenthesesP):
     def __init__(self):
         self.val = ')'
 
+# Operators
+
 class OperatorP(Punctuator):
     pass
 
-# Unary Operations
-
 class UnaryOpP(OperatorP):
     pass
+
+class BinaryOpP(OperatorP):
+    pass
+
+# Unary Operations
 
 class NotP(UnaryOpP):
     def __init__(self):
         self.val = '!'
 
-class NegP(UnaryOpP):
+class NegP(UnaryOpP,BinaryOpP):
     def __init__(self):
         self.val = '-'
 
@@ -104,9 +109,6 @@ class ComplementP(UnaryOpP):
         self.val = '~'
 
 #Binary Operations
-
-class BinaryOpP(OperatorP):
-    pass
 
 class AddP(BinaryOpP):
     def __init__(self):
