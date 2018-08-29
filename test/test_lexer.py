@@ -35,6 +35,9 @@ class TestLexer(unittest.TestCase):
         self.compareSingleToken('}', token.ClosedBraceP)
         self.compareSingleToken('(', token.OpenParenthesesP)
         self.compareSingleToken(')', token.ClosedParenthesesP)
+        self.compareSingleToken('!', token.NotP)
+        self.compareSingleToken('-', token.NegationP)
+        self.compareSingleToken('~', token.ComplementP)
 
     def test_keywork_single(self):
         self.compareSingleToken('return', token.ReturnK)
@@ -51,6 +54,24 @@ class TestLexer(unittest.TestCase):
         self.compareSingleToken('abc', token.Identifier)
         self.compareSingleToken('DEF', token.Identifier)
         self.compareSingleToken('x2', token.Identifier)
+
+    def test_unaryop(self):
+        txt = "!a"
+        cls = [token.NotP, token.Identifier]
+        val = ["", 'a']
+        self.compareMultiToken(txt, cls, val)
+        txt = "~ 5"
+        cls = [token.ComplementP, token.IntC]
+        val = ["", "5"]
+        self.compareMultiToken(txt, cls, val)
+        txt = " a-\t4 "
+        cls = [token.Identifier, token.NegationP, token.IntC]
+        val = ["a", "", "4"]
+        self.compareMultiToken(txt, cls, val)
+        txt = "!!a"
+        cls = [token.NotP, token.NotP, token.Identifier]
+        val = ["", "", 'a']
+        self.compareMultiToken(txt, cls, val)
 
     def test_whitespace(self):
         cls = [token.Identifier]
@@ -84,12 +105,12 @@ class TestLexer(unittest.TestCase):
         val = ["", "7"]
         cls = [token.IntK, token.IntC]
         self.compareMultiToken(txt, cls, val)
-        txt = "int func(int a)\n{\n\treturn 365;\n}\n"
-        val = ["","func","","","a","","","","365","",""]
+        txt = "int func(int a)\n{\n\treturn -365;\n}\n"
+        val = ["","func","","","a","","","","","365","",""]
         cls = [token.IntK, token.Identifier, token.OpenParenthesesP,
                 token.IntK, token.Identifier, token.ClosedParenthesesP,
-                token.OpenBraceP, token.ReturnK, token.IntC, token.SemicolonP,
-                token.ClosedBraceP]
+                token.OpenBraceP, token.ReturnK, token.NegationP, token.IntC,
+                token.SemicolonP, token.ClosedBraceP]
         self.compareMultiToken(txt, cls, val)
 
 

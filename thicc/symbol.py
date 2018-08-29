@@ -61,6 +61,19 @@ class ConstantE(Expression):
         out = buf + "Expression(Constant): " + self.value.val
         return out
 
+class UnaryOpE(Expression):
+    def __init__(self, opTok, expr):
+        super().__init__()
+        self.op = opTok
+        self.expr = expr
+    
+    def __str__(self, level=0):
+        buf = level * "   "
+        out = buf + "Expression(UnaryOp): " + self.op.val + '\n'
+        out += self.expr.__str__(level=level+1)
+        return out
+
+
 #
 # Statements
 #

@@ -9,6 +9,11 @@ class UnknownStatementError(GeneratorError):
         self.expression = expr
         self.message = message
 
+class UnknownExpressionError(GeneratorError):
+    def __init__(self, expr, message="Unknown type of expression"):
+        self.expression = expr
+        self.message = message
+
 class InvalidASTHeadError(GeneratorError):
     def __init__(self, expr, message="Cannot generate code from AST Head"):
         self.expression = expr
@@ -46,13 +51,36 @@ class Generator():
 
     def generateStatement(self, statement):
         if isinstance(statement, symbol.ReturnS):
-            val = statement.value.value.val
-            line1 = "movl\t${0:s}, %eax\n".format(val)
-            line2 = "ret\n"
-            code = line1+line2
+            setValue = self.generateExpression(statement.value)
+            returnLine = "ret\n"
+            code = setValue+returnLine
         else:
             raise UnknownStatementError(statement)
 
         return code
+
+    def generateExpression(self, expr):
+        if isinstance(expr, symbol.ConstantE):
+            val = expr.value.val
+            code = "movl\t${0:s}, %eax\n".format(val)
+        elif isinstance(expr, symbol.UnaryOpE):
+            codeSet = self.generateExpression(expr.expr)
+            op = expr.op
+            if isinstance(op, token.NotP):
+                codeOp  = "cmpl\t$0, %eax\n"
+                codeOp += "movl\t$0, %eax\n"
+                codeOp += "sete\t%al\n"
+            elif isinstance(op, token.NegationP):
+                codeOp = "neg\t%eax\n"
+            elif isinstance(op, token.ComplementP):
+                codeOp = "not\t%eax\n"
+            else:
+                raise UnknownExpressionError(expr)
+            code = codeSet+codeOp
+        else:
+            raise UnknownExpressionError(expr)
+
+        return code
+
 
 

@@ -87,8 +87,10 @@ class Parser():
 
     def parseExpression(self, tokens):
         tok = tokens.pop()
-        if not isinstance(tok, token.Constant):
-            raise InvalidExpressionError(tok.val)
-        return symbol.ConstantE(tok)
-
+        if isinstance(tok, token.UnaryOpP):
+            expr = self.parseExpression(tokens)
+            return symbol.UnaryOpE(tok, expr)
+        elif isinstance(tok, token.Constant):
+            return symbol.ConstantE(tok)
+        raise InvalidExpressionError(tok.val)
 
