@@ -76,13 +76,13 @@ class Generator():
 
         codeSet = self.generateExpression(expr.expr)
         op = expr.op
-        if isinstance(op, token.NotP):
+        if isinstance(op, token.Not):
             codeOp  = "cmpl     $0, %eax\n"
             codeOp += "movl     $0, %eax\n"
             codeOp += "sete     %al\n"
-        elif isinstance(op, token.NegP):
+        elif isinstance(op, token.Neg):
             codeOp =  "neg      %eax\n"
-        elif isinstance(op, token.ComplementP):
+        elif isinstance(op, token.Complement):
             codeOp =  "not      %eax\n"
         else:
             raise UnknownExpressionError(expr)
@@ -101,14 +101,14 @@ class Generator():
         codeSet2 = self.generateExpression(e2)
         codePop1  = "popq     %rcx\n"
 
-        if isinstance(op, token.AddP):
+        if isinstance(op, token.Add):
             codeOp = "addl     %ecx, %eax\n"
-        elif isinstance(op, token.NegP):
+        elif isinstance(op, token.Neg):
             codeOp = "subl     %eax, %ecx\n"
             codeOp += "movl     %ecx, %eax\n"
-        elif isinstance(op, token.MultP):
+        elif isinstance(op, token.Mult):
             codeOp = "imull    %ecx, %eax\n"
-        elif isinstance(op, token.DivP):
+        elif isinstance(op, token.Div):
             #swap e2 and e1 so e1 is in eax
             codeOp  = "movl     %ecx, %edx\n"
             codeOp += "movl     %eax, %ecx\n"

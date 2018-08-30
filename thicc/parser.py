@@ -56,21 +56,21 @@ class Parser():
             raise InvalidFunctionError(tok.val)
 
         tok = tokens.pop()
-        if not isinstance(tok, token.OpenParenthesesP):
+        if not isinstance(tok, token.OpenParentheses):
             raise InvalidFunctionError(tok.val)
 
         tok = tokens.pop()
-        if not isinstance(tok, token.ClosedParenthesesP):
+        if not isinstance(tok, token.ClosedParentheses):
             raise InvalidFunctionError(tok.val)
 
         tok = tokens.pop()
-        if not isinstance(tok, token.OpenBraceP):
+        if not isinstance(tok, token.OpenBrace):
             raise InvalidFunctionError(tok.val)
 
         body = self.parseStatement(tokens)
 
         tok = tokens.pop()
-        if not isinstance(tok, token.ClosedBraceP):
+        if not isinstance(tok, token.ClosedBrace):
             raise InvalidFunctionError(tok.val)
 
         return symbol.Function(ident, body)
@@ -84,7 +84,7 @@ class Parser():
         expr = self.parseExpression(tokens)
 
         tok = tokens.pop()
-        if not isinstance(tok, token.SemicolonP):
+        if not isinstance(tok, token.Semicolon):
             raise InvalidStatementError(tok.val)
 
         return symbol.ReturnS(expr)
@@ -93,7 +93,7 @@ class Parser():
         expr = self.parseTerm(tokens)
         if len(tokens) > 0:
             tok = tokens.pop()
-            while isinstance(tok,token.AddP) or isinstance(tok,token.NegP):
+            while isinstance(tok,token.Add) or isinstance(tok,token.Neg):
                 term = self.parseTerm(tokens)
                 expr = symbol.BinaryOpE(tok, expr, term)
                 if len(tokens) > 0:
@@ -110,7 +110,7 @@ class Parser():
         term = self.parseFactor(tokens)
         if len(tokens) > 0:
             tok = tokens.pop()
-            while isinstance(tok,token.MultP) or isinstance(tok,token.DivP):
+            while isinstance(tok,token.Mult) or isinstance(tok,token.Div):
                 fac = self.parseFactor(tokens)
                 term = symbol.BinaryOpE(tok, term, fac)
                 if len(tokens) > 0:
@@ -125,13 +125,13 @@ class Parser():
 
     def parseFactor(self, tokens):
         tok = tokens.pop()
-        if isinstance(tok, token.OpenParenthesesP):
+        if isinstance(tok, token.OpenParentheses):
             fac = self.parseExpression(tokens)
             tok = tokens.pop()
-            if not isinstance(tok, token.ClosedParenthesesP):
+            if not isinstance(tok, token.ClosedParentheses):
                 raise UnmatchedParthenthesesError(tok.val)
             return fac
-        elif isinstance(tok, token.UnaryOpP):
+        elif isinstance(tok, token.UnaryOp):
             fac = self.parseFactor(tokens)
             return symbol.UnaryOpE(tok, fac)
         elif isinstance(tok, token.Constant):

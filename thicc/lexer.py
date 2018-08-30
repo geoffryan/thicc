@@ -8,64 +8,129 @@ class LexIllegalCharError(LexError):
         self.expression = char
         self.message = message
 
-class LexInvalidLiteralError(LexError):
-    def __init__(self, lit, message="Illegal literal format"):
+class LexInvalidIdentifierError(LexError):
+    def __init__(self, lit, message="Illegal identifier format"):
+        self.expression = lit
+        self.message = message
+
+class LexInvalidPunctuatorError(LexError):
+    def __init__(self, lit, message="Cannot lex punctuators"):
         self.expression = lit
         self.message = message
 
 class Lexer():
 
     def __init__(self):
-        self.punct = {';':token.SemicolonP, 
-                    '(':token.OpenParenthesesP,
-                    ')':token.ClosedParenthesesP,
-                    '{':token.OpenBraceP,
-                    '}':token.ClosedBraceP,
-                    '!':token.NotP,
-                    '~':token.ComplementP,
-                    '-':token.NegP,
-                    '+':token.AddP,
-                    '*':token.MultP,
-                    '/':token.DivP}
+        self.punct = {';':token.Semicolon, 
+                    '(':token.OpenParentheses,
+                    ')':token.ClosedParentheses,
+                    '{':token.OpenBrace,
+                    '}':token.ClosedBrace,
+                    '!':token.Not,
+                    '~':token.Complement,
+                    '-':token.Neg,
+                    '+':token.Add,
+                    '*':token.Mult,
+                    '/':token.Div,
+                    '%':token.Mod,
+                    '<<':token.BitShiftL,
+                    '>>':token.BitShiftR,
+                    '<':token.LessThan,
+                    '<=':token.LessThanEqual,
+                    '>':token.GreaterThan,
+                    '>=':token.GreaterThanEqual,
+                    '==':token.Equal,
+                    '!=':token.NotEqual,
+                    '&':token.BitAnd,
+                    '|':token.BitOr,
+                    '^':token.BitXor,
+                    '&&':token.And,
+                    '||':token.Or}
         self.keywords = {'int':token.IntK,
                         'return':token.ReturnK}
         self.intchars = '0123456789'
+        self.alchars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        self.alnumchars = self.intchars + self.alchars
+        self.punctchars = "".join(self.punct)
+        self.maxPunctLen = max([len(p) for p in self.punct])
 
     def tokenize(self, inputStr):
         toks = []
         start = 0
-        reading = False
-        readingLiteral = False
+        readingComment = False
+        readingExpression = False
+        readingPunct = False
+
         for i in range(len(inputStr)):
             c = inputStr[i]
-            if c in self.punct.keys():
-                if reading:
-                    toks.append(self._tokExp(inputStr[start:i]))
-                    reading = False
-                toks.append(self.punct[c]())
-            elif c.isspace():
-                if reading:
-                    toks.append(self._tokExp(inputStr[start:i]))
-                    reading = False
-            elif not c.isalnum():
-                raise LexIllegalCharError(c)
 
-            elif reading:
-                if readingLiteral:
-                    if c not in self.intchars:
-                        raise LexInvalidLiteralError(inputStr[start:i+1])
+            if c.isspace():
+                if readingExpression:
+                    toks.append(self._tokExp(inputStr[start:i]))
+                    readingExpression = False
+                elif readingPunct:
+                    toks += self._tokPunct(inputStr[start:i])
+                    readingPunct = False
+            elif readingPunct:
+                if c in self.alnumchars:
+                    toks += self._tokPunct(inputStr[start:i])
+                    readingPunct = False
+                    readingExpression = True
+                    start = i
+                elif c not in self.punctchars:
+                    raise LexIllegalCharError(c)
+            elif readingExpression:
+                if c in self.punctchars:
+                    toks.append(self._tokExp(inputStr[start:i]))
+                    readingExpression = False
+                    readingPunct = True
+                    start = i
+                elif c not in self.alnumchars:
+                    raise LexIllegalCharError(c)
             else:
-                start = i
-                reading = True
-                if c in self.intchars:
-                    readingLiteral = True
+                if c in self.alnumchars:
+                    readingExpression = True
+                    start = i
+                elif c in self.punctchars:
+                    readingPunct = True
+                    start = i
                 else:
-                    readingLiteral = False
-        if reading:
+                    raise LexIllegalCharError(c)
+        if readingExpression:
             toks.append(self._tokExp(inputStr[start:]))
+        elif readingPunct:
+            toks += self._tokPunct(inputStr[start:])
+
 
         return toks
 
+    def _tokPunct(self, puncts):
+        #Lex a string containing only Punctuation characters into
+        #(possibly several) tokens
+
+        # This seems way too complicated. The issue is how to distinguish
+        # '!' and '!='.  The method is to begin at index = 0 of the string
+        # and look for matches with the LONGEST punctuators. If no matches are
+        # found, try the next shortest punctuators, continue until a match is
+        # found, then increment the index by the length of the match. If no
+        # match is found, raise an error.
+        toks = []
+
+        l = len(puncts)
+        i=0
+        while i < l:
+            n = min(l-i, self.maxPunctLen)
+            found = False
+            for k in range(n,0,-1):
+                val = puncts[i:i+k]
+                if val in self.punct.keys():
+                    toks.append(self.punct[val]())
+                    i += k
+                    found = True
+                    break
+            if not found:
+                raise LexInvalidPunctuatorError(puncts)
+        return toks
 
     def _tokExp(self, exp):
         if exp in self.keywords.keys():
@@ -73,5 +138,8 @@ class Lexer():
         elif all([c in self.intchars for c in exp]):
             return token.IntC(exp)
         else:
-            return token.Identifier(exp)
+            if exp[0] in self.alchars:
+                return token.Identifier(exp)
+            else:
+                raise LexInvalidIdentifierError(exp)
 

@@ -31,54 +31,54 @@ class TestParser(unittest.TestCase):
         sym5 = symbol.ConstantE(token.IntC("5"))
         self.compareExpression(toks, sym5)
 
-        toks = [token.NegP(), token.IntC("5")]
-        sym = symbol.UnaryOpE(token.NegP(), sym5)
+        toks = [token.Neg(), token.IntC("5")]
+        sym = symbol.UnaryOpE(token.Neg(), sym5)
         self.compareExpression(toks, sym)
 
-        toks = [token.NotP(), token.IntC("5")]
-        sym = symbol.UnaryOpE(token.NotP(), sym5)
+        toks = [token.Not(), token.IntC("5")]
+        sym = symbol.UnaryOpE(token.Not(), sym5)
         self.compareExpression(toks, sym)
 
-        toks = [token.ComplementP(), token.IntC("5")]
-        sym = symbol.UnaryOpE(token.ComplementP(), sym5)
+        toks = [token.Complement(), token.IntC("5")]
+        sym = symbol.UnaryOpE(token.Complement(), sym5)
         self.compareExpression(toks, sym)
 
-        toks = [token.ComplementP(), token.NegP(), token.IntC("5")]
-        sym = symbol.UnaryOpE(token.ComplementP(), 
-                                symbol.UnaryOpE(token.NegP(), sym5))
+        toks = [token.Complement(), token.Neg(), token.IntC("5")]
+        sym = symbol.UnaryOpE(token.Complement(), 
+                                symbol.UnaryOpE(token.Neg(), sym5))
         self.compareExpression(toks, sym)
 
     def test_binaryOp_add(self):
 
         sym5 = symbol.ConstantE(token.IntC("5"))
         sym10 = symbol.ConstantE(token.IntC("10"))
-        symm5 = symbol.UnaryOpE(token.NegP(), sym5)
+        symm5 = symbol.UnaryOpE(token.Neg(), sym5)
 
         # 5+10
-        toks = [token.IntC("5"), token.AddP(), token.IntC("10")]
-        sym = symbol.BinaryOpE(token.AddP(), sym5, sym10)
+        toks = [token.IntC("5"), token.Add(), token.IntC("10")]
+        sym = symbol.BinaryOpE(token.Add(), sym5, sym10)
         self.compareExpression(toks, sym)
 
         # 5-10
-        toks = [token.IntC("5"), token.NegP(), token.IntC("10")]
-        sym = symbol.BinaryOpE(token.NegP(), sym5, sym10)
+        toks = [token.IntC("5"), token.Neg(), token.IntC("10")]
+        sym = symbol.BinaryOpE(token.Neg(), sym5, sym10)
         self.compareExpression(toks, sym)
 
         # -5+10
-        toks = [token.NegP(), token.IntC("5"), token.AddP(), token.IntC("10")]
-        sym = symbol.BinaryOpE(token.AddP(), symm5, sym10)
+        toks = [token.Neg(), token.IntC("5"), token.Add(), token.IntC("10")]
+        sym = symbol.BinaryOpE(token.Add(), symm5, sym10)
         self.compareExpression(toks, sym)
 
         # 10+-5
-        toks = [token.IntC("10"), token.AddP(), token.NegP(), token.IntC("5")]
-        sym = symbol.BinaryOpE(token.AddP(), sym10, symm5)
+        toks = [token.IntC("10"), token.Add(), token.Neg(), token.IntC("5")]
+        sym = symbol.BinaryOpE(token.Add(), sym10, symm5)
         self.compareExpression(toks, sym)
         
         # 5-10+10
-        toks = [token.IntC("5"), token.NegP(), token.IntC("10"),
-                token.AddP(), token.IntC("10")]
-        sym = symbol.BinaryOpE(token.AddP(), 
-                            symbol.BinaryOpE(token.NegP(), sym5, sym10), sym10)
+        toks = [token.IntC("5"), token.Neg(), token.IntC("10"),
+                token.Add(), token.IntC("10")]
+        sym = symbol.BinaryOpE(token.Add(), 
+                            symbol.BinaryOpE(token.Neg(), sym5, sym10), sym10)
         self.compareExpression(toks, sym)
 
 
@@ -86,83 +86,83 @@ class TestParser(unittest.TestCase):
 
         sym5 = symbol.ConstantE(token.IntC("5"))
         sym10 = symbol.ConstantE(token.IntC("10"))
-        symm5 = symbol.UnaryOpE(token.NegP(), sym5)
+        symm5 = symbol.UnaryOpE(token.Neg(), sym5)
 
         # 5*10
-        toks = [token.IntC("5"), token.MultP(), token.IntC("10")]
-        sym = symbol.BinaryOpE(token.MultP(), sym5, sym10)
+        toks = [token.IntC("5"), token.Mult(), token.IntC("10")]
+        sym = symbol.BinaryOpE(token.Mult(), sym5, sym10)
         self.compareExpression(toks, sym)
 
         # 5/10
-        toks = [token.IntC("5"), token.DivP(), token.IntC("10")]
-        sym = symbol.BinaryOpE(token.DivP(), sym5, sym10)
+        toks = [token.IntC("5"), token.Div(), token.IntC("10")]
+        sym = symbol.BinaryOpE(token.Div(), sym5, sym10)
         self.compareExpression(toks, sym)
 
         # -5*10
-        toks = [token.NegP(), token.IntC("5"), token.MultP(), token.IntC("10")]
-        sym = symbol.BinaryOpE(token.MultP(), symm5, sym10)
+        toks = [token.Neg(), token.IntC("5"), token.Mult(), token.IntC("10")]
+        sym = symbol.BinaryOpE(token.Mult(), symm5, sym10)
         self.compareExpression(toks, sym)
 
         # 10*-5
-        toks = [token.IntC("10"), token.MultP(), token.NegP(), token.IntC("5")]
-        sym = symbol.BinaryOpE(token.MultP(), sym10, symm5)
+        toks = [token.IntC("10"), token.Mult(), token.Neg(), token.IntC("5")]
+        sym = symbol.BinaryOpE(token.Mult(), sym10, symm5)
         self.compareExpression(toks, sym)
         
         # 5/10*10
-        toks = [token.IntC("5"), token.DivP(), token.IntC("10"), 
-                    token.MultP(), token.IntC("10")]
-        sym = symbol.BinaryOpE(token.MultP(), 
-                            symbol.BinaryOpE(token.DivP(), sym5, sym10), sym10)
+        toks = [token.IntC("5"), token.Div(), token.IntC("10"), 
+                    token.Mult(), token.IntC("10")]
+        sym = symbol.BinaryOpE(token.Mult(), 
+                            symbol.BinaryOpE(token.Div(), sym5, sym10), sym10)
         self.compareExpression(toks, sym)
 
     def test_parentheses(self):
 
         sym5 = symbol.ConstantE(token.IntC("5"))
         sym10 = symbol.ConstantE(token.IntC("10"))
-        symm5 = symbol.UnaryOpE(token.NegP(), sym5)
+        symm5 = symbol.UnaryOpE(token.Neg(), sym5)
 
         # (5)
-        toks = [token.OpenParenthesesP(), token.IntC("5"), 
-                    token.ClosedParenthesesP()]
+        toks = [token.OpenParentheses(), token.IntC("5"), 
+                    token.ClosedParentheses()]
         sym = sym5
         self.compareExpression(toks, sym)
 
         # ((5))
-        toks = [token.OpenParenthesesP(), token.OpenParenthesesP(), 
-                token.IntC("5"), token.ClosedParenthesesP(), 
-                token.ClosedParenthesesP()]
+        toks = [token.OpenParentheses(), token.OpenParentheses(), 
+                token.IntC("5"), token.ClosedParentheses(), 
+                token.ClosedParentheses()]
         sym = sym5
         self.compareExpression(toks, sym)
 
         # -(5)
-        toks = [token.NegP(), token.OpenParenthesesP(), token.IntC("5"), 
-                    token.ClosedParenthesesP()]
-        sym = symbol.UnaryOpE(token.NegP(), sym5)
+        toks = [token.Neg(), token.OpenParentheses(), token.IntC("5"), 
+                    token.ClosedParentheses()]
+        sym = symbol.UnaryOpE(token.Neg(), sym5)
         self.compareExpression(toks, sym)
 
         # (-5)
-        toks = [token.OpenParenthesesP(), token.NegP(), token.IntC("5"), 
-                    token.ClosedParenthesesP()]
-        sym = symbol.UnaryOpE(token.NegP(), sym5)
+        toks = [token.OpenParentheses(), token.Neg(), token.IntC("5"), 
+                    token.ClosedParentheses()]
+        sym = symbol.UnaryOpE(token.Neg(), sym5)
         self.compareExpression(toks, sym)
 
         # (10)*5
-        toks = [token.OpenParenthesesP(), token.IntC("10"), 
-                token.ClosedParenthesesP(), token.MultP(), token.IntC("5")]
-        sym = symbol.BinaryOpE(token.MultP(), sym10, sym5)
+        toks = [token.OpenParentheses(), token.IntC("10"), 
+                token.ClosedParentheses(), token.Mult(), token.IntC("5")]
+        sym = symbol.BinaryOpE(token.Mult(), sym10, sym5)
         self.compareExpression(toks, sym)
 
         # 5*(10-5)
-        toks = [token.IntC("5"), token.MultP(), token.OpenParenthesesP(), 
-                token.IntC("10"), token.NegP(), token.IntC("5"),
-                token.ClosedParenthesesP()]
-        sym = symbol.BinaryOpE(token.MultP(), sym5, 
-                symbol.BinaryOpE(token.NegP(), sym10, sym5))
+        toks = [token.IntC("5"), token.Mult(), token.OpenParentheses(), 
+                token.IntC("10"), token.Neg(), token.IntC("5"),
+                token.ClosedParentheses()]
+        sym = symbol.BinaryOpE(token.Mult(), sym5, 
+                symbol.BinaryOpE(token.Neg(), sym10, sym5))
         self.compareExpression(toks, sym)
 
     def test_statement(self):
 
-        toks = [token.ReturnK(), token.IntC("36"), token.SemicolonP()]
+        toks = [token.ReturnK(), token.IntC("36"), token.Semicolon()]
         sym36 = symbol.ConstantE(token.IntC("36"))
         sym = symbol.ReturnS(sym36)
 
@@ -170,9 +170,9 @@ class TestParser(unittest.TestCase):
 
     def test_function(self):
 
-        toks = [token.IntK(), token.Identifier("foo"), token.OpenParenthesesP(),
-                token.ClosedParenthesesP(), token.OpenBraceP(), token.ReturnK(),
-                token.IntC("88"), token.SemicolonP(), token.ClosedBraceP()]
+        toks = [token.IntK(), token.Identifier("foo"), token.OpenParentheses(),
+                token.ClosedParentheses(), token.OpenBrace(), token.ReturnK(),
+                token.IntC("88"), token.Semicolon(), token.ClosedBrace()]
         tokFoo = token.Identifier("foo")
         tok88 = token.IntC("88")
         sym = symbol.Function(tokFoo, symbol.ReturnS(symbol.ConstantE(tok88)))
@@ -181,9 +181,9 @@ class TestParser(unittest.TestCase):
 
     def test_program(self):
 
-        toks = [token.IntK(), token.Identifier("foo"), token.OpenParenthesesP(),
-                token.ClosedParenthesesP(), token.OpenBraceP(), token.ReturnK(),
-                token.IntC("88"), token.SemicolonP(), token.ClosedBraceP()]
+        toks = [token.IntK(), token.Identifier("foo"), token.OpenParentheses(),
+                token.ClosedParentheses(), token.OpenBrace(), token.ReturnK(),
+                token.IntC("88"), token.Semicolon(), token.ClosedBrace()]
         tokFoo = token.Identifier("foo")
         tok88 = token.IntC("88")
         sym = symbol.Program(

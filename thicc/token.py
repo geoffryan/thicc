@@ -57,67 +57,124 @@ class IntC(Constant):
 # Punctuators
 #
 
-class SemicolonP(Punctuator):
+class Semicolon(Punctuator):
     def __init__(self):
         self.val = ';'
 
-class BraceP(Punctuator):
+class Brace(Punctuator):
     pass
 
-class OpenBraceP(BraceP):
+class OpenBrace(Brace):
     def __init__(self):
         self.val = '}'
 
-class ClosedBraceP(BraceP):
+class ClosedBrace(Brace):
     def __init__(self):
         self.val = '}'
 
-class ParenthesesP(Punctuator):
+class Parentheses(Punctuator):
     pass
 
-class OpenParenthesesP(ParenthesesP):
+class OpenParentheses(Parentheses):
     def __init__(self):
         self.val = '('
 
-class ClosedParenthesesP(ParenthesesP):
+class ClosedParentheses(Parentheses):
     def __init__(self):
         self.val = ')'
 
 # Operators
 
-class OperatorP(Punctuator):
+class Operator(Punctuator):
     pass
 
-class UnaryOpP(OperatorP):
+class UnaryOp(Operator):
     pass
 
-class BinaryOpP(OperatorP):
+class BinaryOp(Operator):
     pass
 
 # Unary Operations
 
-class NotP(UnaryOpP):
+class Not(UnaryOp):
     def __init__(self):
         self.val = '!'
 
-class NegP(UnaryOpP,BinaryOpP):
+class Neg(UnaryOp,BinaryOp):
     def __init__(self):
         self.val = '-'
 
-class ComplementP(UnaryOpP):
+class Complement(UnaryOp):
     def __init__(self):
         self.val = '~'
 
 #Binary Operations
 
-class AddP(BinaryOpP):
+class Add(BinaryOp):
     def __init__(self):
         self.val = '+'
 
-class MultP(BinaryOpP):
+class Mult(BinaryOp):
     def __init__(self):
         self.val = '*'
 
-class DivP(BinaryOpP):
+class Div(BinaryOp):
     def __init__(self):
         self.val = '/'
+
+class Mod(BinaryOp):
+    def __init__(self):
+        self.val = '%'
+
+class BitShiftL(BinaryOp):
+    def __init__(self):
+        self.val = '<<'
+
+class BitShiftR(BinaryOp):
+    def __init__(self):
+        self.val = '>>'
+
+class LessThan(BinaryOp):
+    def __init__(self):
+        self.val = '<'
+
+class LessThanEqual(BinaryOp):
+    def __init__(self):
+        self.val = '<='
+
+class GreaterThan(BinaryOp):
+    def __init__(self):
+        self.val = '>'
+
+class GreaterThanEqual(BinaryOp):
+    def __init__(self):
+        self.val = '>='
+
+class Equal(BinaryOp):
+    def __init__(self):
+        self.val = '=='
+
+class NotEqual(BinaryOp):
+    def __init__(self):
+        self.val = '!='
+
+class BitAnd(BinaryOp):
+    def __init__(self):
+        self.val = '&'
+
+class BitOr(BinaryOp):
+    def __init__(self):
+        self.val = '|'
+
+class BitXor(BinaryOp):
+    def __init__(self):
+        self.val = '^'
+
+class And(BinaryOp):
+    def __init__(self):
+        self.val = '&&'
+
+class Or(BinaryOp):
+    def __init__(self):
+        self.val = '||'
+
