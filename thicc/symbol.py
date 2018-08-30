@@ -70,25 +70,7 @@ class BinaryOpE(Expression):
         out += self.term2.__str__(level=level+1)
         return out
 
-class SumE(BinaryOpE,Expression):
-    pass
-
-class SubtractE(BinaryOpE,Expression):
-    pass
-
-class TermE(Expression):
-    pass
-
-class MultE(BinaryOpE,TermE):
-    pass
-
-class DivE(BinaryOpE,TermE):
-    pass
-
-class FactorE(TermE):
-    pass
-
-class ConstantE(FactorE):
+class ConstantE(Expression):
     def __init__(self, tok):
         super().__init__()
         self.terminal = True
@@ -99,7 +81,7 @@ class ConstantE(FactorE):
         out = buf + "Expression(Constant): " + self.value.val
         return out
 
-class UnaryOpE(FactorE):
+class UnaryOpE(Expression):
     def __init__(self, opTok, expr):
         super().__init__()
         self.op = opTok

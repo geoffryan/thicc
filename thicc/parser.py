@@ -32,7 +32,17 @@ class UnmatchedParenthesesError(ParseError):
 class Parser():
 
     def __init__(self):
-        pass
+        self.binOpOrder = [[token.Or],
+                            [token.And],
+                            [token.BitOr],
+                            [token.BitXor],
+                            [token.BitAnd],
+                            [token.Equal, token.NotEqual],
+                            [token.LessThan, token.LessThanEqual,
+                                token.GreaterThan, token.GreaterThanEqual],
+                            [token.BitShiftL, token.BitShiftR],
+                            [token.Add, token.Neg],
+                            [token.Mult, token.Div, token.Mod]]
 
     def parse(self, toks):
 
@@ -88,31 +98,23 @@ class Parser():
             raise InvalidStatementError(tok.val)
 
         return symbol.ReturnS(expr)
-
+    
     def parseExpression(self, tokens):
-        expr = self.parseTerm(tokens)
-        if len(tokens) > 0:
-            tok = tokens.pop()
-            while isinstance(tok,token.Add) or isinstance(tok,token.Neg):
-                term = self.parseTerm(tokens)
-                expr = symbol.BinaryOpE(tok, expr, term)
-                if len(tokens) > 0:
-                    tok = tokens.pop()
-                else:
-                    tok = None
-                    break
-            if tok is not None:
-                tokens.append(tok)
-
+        expr = self.parseBinOp(tokens, self.binOpOrder)
         return expr
 
-    def parseTerm(self, tokens):
-        term = self.parseFactor(tokens)
+    def parseBinOp(self, tokens, opOrder):
+        parseFunc = self.parseBinOp
+        if len(opOrder) == 1:
+            parseFunc = self.parseFactor
+        ops = opOrder[0]
+
+        expr = parseFunc(tokens, opOrder[1:])
         if len(tokens) > 0:
             tok = tokens.pop()
-            while isinstance(tok,token.Mult) or isinstance(tok,token.Div):
-                fac = self.parseFactor(tokens)
-                term = symbol.BinaryOpE(tok, term, fac)
+            while any([isinstance(tok,opCls) for opCls in ops]):
+                el = parseFunc(tokens, opOrder[1:])
+                expr = symbol.BinaryOpE(tok, expr, el)
                 if len(tokens) > 0:
                     tok = tokens.pop()
                 else:
@@ -120,10 +122,9 @@ class Parser():
                     break
             if tok is not None:
                 tokens.append(tok)
+        return expr
 
-        return term
-
-    def parseFactor(self, tokens):
+    def parseFactor(self, tokens, empty=None):
         tok = tokens.pop()
         if isinstance(tok, token.OpenParentheses):
             fac = self.parseExpression(tokens)
