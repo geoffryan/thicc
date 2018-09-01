@@ -79,6 +79,115 @@ class Generator():
     def binaryOpCode(self, expr):
         pass
 
+class Generator_x86_64(Generator):
+
+    def constExprCode(self, expr):
+        val = expr.value.val
+        code = "movl     ${0:s}, %eax\n".format(val)
+        return code
+
+    def unaryOpCode(self, expr):
+
+        codeSet = self.generateExpression(expr.expr)
+        op = expr.op
+        if isinstance(op, token.Not):
+            codeOp  = "cmpl     $0, %eax\n"
+            codeOp += "movl     $0, %eax\n"
+            codeOp += "sete     %al\n"
+        elif isinstance(op, token.Neg):
+            codeOp =  "neg      %eax\n"
+        elif isinstance(op, token.Complement):
+            codeOp =  "not      %eax\n"
+        else:
+            raise UnknownExpressionError(expr)
+        code = codeSet+codeOp
+
+        return code
+
+    def binaryOpCode(self, expr):
+
+        op = expr.op
+        e1 = expr.expr1
+        e2 = expr.expr2
+
+        codeSet1 = self.generateExpression(e1)
+        codePush1 = "pushq    %rax\n"
+        codeSet2 = self.generateExpression(e2)
+        codeSet2 += "movl     %eax, %ecx\n"
+        codePop1  = "popq     %rax\n"
+
+        if isinstance(op, token.Add):
+            codeOp = "addl     %ecx, %eax\n"
+        elif isinstance(op, token.Neg):
+            codeOp = "subl     %ecx, %eax\n"
+        elif isinstance(op, token.Mult):
+            codeOp = "imull    %ecx, %eax\n"
+        elif isinstance(op, token.Div):
+            #zero out rdx
+            codeOp = "movl     $0, %edx\n"
+            #divide!
+            codeOp += "idivl    %ecx\n"
+        elif isinstance(op, token.Mod):
+            #zero out rdx
+            codeOp =  "movl     $0, %edx\n"
+            #divide!
+            codeOp += "idivl    %ecx\n"
+            codeOp += "movl     %edx, %eax\n"
+        elif isinstance(op, token.BitShiftL):
+            codeOp =  "shll     %cl, %eax\n"
+        elif isinstance(op, token.BitShiftR):
+            codeOp =  "shrl     %cl, %eax\n"
+        elif isinstance(op, token.BitAnd):
+            codeOp =  "and      %ecx, %eax\n"
+        elif isinstance(op, token.BitOr):
+            codeOp =  "orl      %ecx, %eax\n"
+        elif isinstance(op, token.BitXor):
+            codeOp =  "xorl     %ecx, %eax\n"
+        elif isinstance(op, token.Equal):
+            codeOp =  "cmpl     %eax, %ecx\n"
+            codeOp += "movl     $0, %eax\n"
+            codeOp += "sete     %al\n"
+        elif isinstance(op, token.NotEqual):
+            codeOp =  "cmpl     %eax, %ecx\n"
+            codeOp += "movl     $0, %eax\n"
+            codeOp += "setne    %al\n"
+        elif isinstance(op, token.LessThan):
+            codeOp =  "cmpl     %ecx, %eax\n"
+            codeOp += "movl     $0, %eax\n"
+            codeOp += "sets     %al\n"
+        elif isinstance(op, token.GreaterThan):
+            codeOp =  "cmpl     %eax, %ecx\n"
+            codeOp += "movl     $0, %eax\n"
+            codeOp += "sets     %al\n"
+        elif isinstance(op, token.LessThanEqual):
+            codeOp =  "cmpl     %eax, %ecx\n"
+            codeOp += "movl     $0, %eax\n"
+            codeOp += "setns    %al\n"
+        elif isinstance(op, token.GreaterThanEqual):
+            codeOp =  "cmpl     %ecx, %eax\n"
+            codeOp += "movl     $0, %eax\n"
+            codeOp += "setns    %al\n"
+        elif isinstance(op, token.And):
+            codeOp =  "cmpl     $0, %eax\n"
+            codeOp += "movl     $0, %eax\n"
+            codeOp += "setne    %al\n"
+            codeOp += "cmpl     $0, %ecx\n"
+            codeOp += "movl     $0, %ecx\n"
+            codeOp += "setne    %cl\n"
+            codeOp += "andl     %ecx, %eax\n"
+        elif isinstance(op, token.Or):
+            codeOp =  "orl      %ecx, %eax\n"
+            codeOp += "cmpl     $0, %eax\n"
+            codeOp += "movl     $0, %eax\n"
+            codeOp += "setne    %al\n"
+
+        else:
+            raise UnknownExpressionError(expr)
+
+        code = codeSet1+codePush1+codeSet2+codePop1+codeOp
+        return code
+
+
 class Generator_x86(Generator):
 
     def constExprCode(self, expr):
@@ -136,65 +245,3 @@ class Generator_x86(Generator):
 
         code = codeSet1+codePush1+codeSet2+codePop1+codeOp
         return code
-
-class Generator_x86_64(Generator):
-
-    def constExprCode(self, expr):
-        val = expr.value.val
-        code = "movl     ${0:s}, %eax\n".format(val)
-        return code
-
-    def unaryOpCode(self, expr):
-
-        codeSet = self.generateExpression(expr.expr)
-        op = expr.op
-        if isinstance(op, token.Not):
-            codeOp  = "cmpl     $0, %eax\n"
-            codeOp += "movl     $0, %eax\n"
-            codeOp += "sete     %al\n"
-        elif isinstance(op, token.Neg):
-            codeOp =  "neg      %eax\n"
-        elif isinstance(op, token.Complement):
-            codeOp =  "not      %eax\n"
-        else:
-            raise UnknownExpressionError(expr)
-        code = codeSet+codeOp
-
-        return code
-
-    def binaryOpCode(self, expr):
-
-        op = expr.op
-        e1 = expr.expr1
-        e2 = expr.expr2
-
-        codeSet1 = self.generateExpression(e1)
-        codePush1 = "pushq    %rax\n"
-        codeSet2 = self.generateExpression(e2)
-        codePop1  = "popq     %rcx\n"
-
-        if isinstance(op, token.Add):
-            codeOp = "addl     %ecx, %eax\n"
-        elif isinstance(op, token.Neg):
-            codeOp = "subl     %eax, %ecx\n"
-            codeOp += "movl     %ecx, %eax\n"
-        elif isinstance(op, token.Mult):
-            codeOp = "imull    %ecx, %eax\n"
-        elif isinstance(op, token.Div):
-            #swap e2 and e1 so e1 is in eax
-            codeOp  = "movl     %ecx, %edx\n"
-            codeOp += "movl     %eax, %ecx\n"
-            codeOp += "movl     %edx, %eax\n"
-            #zero out rdx
-            codeOp += "movl     $0, %edx\n"
-            #divide!
-            codeOp += "idivl    %ecx\n"
-        else:
-            raise UnknownExpressionError(expr)
-
-        code = codeSet1+codePush1+codeSet2+codePop1+codeOp
-        return code
-
-
-
-
