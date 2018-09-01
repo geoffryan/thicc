@@ -35,7 +35,9 @@ class Generator():
         else:
             raise InvalidASTHeadError(ast)
 
-        return code
+        codeStr = "\n".join(code)
+
+        return codeStr
 
     def generateProgram(self, prog):
         code = self.generateFunction(prog.function)
@@ -43,8 +45,8 @@ class Generator():
 
     def generateFunction(self, func):
         name = func.name.val
-        head1 = ".globl _{0:s}\n".format(name)
-        head2 = "_{0:s}:\n".format(name)
+        head1 = [".globl _{0:s}".format(name)]
+        head2 = ["_{0:s}:".format(name)]
         body = self.generateStatement(func.body)
 
         code = head1 + head2 + body
@@ -53,7 +55,7 @@ class Generator():
     def generateStatement(self, statement):
         if isinstance(statement, symbol.ReturnS):
             setValue = self.generateExpression(statement.value)
-            returnLine = "ret\n"
+            returnLine = ["ret"]
             code = setValue+returnLine
         else:
             raise UnknownStatementError(statement)
@@ -83,7 +85,7 @@ class Generator_x86_64(Generator):
 
     def constExprCode(self, expr):
         val = expr.value.val
-        code = "movl     ${0:s}, %eax\n".format(val)
+        code = ["movl     ${0:s}, %eax".format(val)]
         return code
 
     def unaryOpCode(self, expr):
@@ -91,13 +93,13 @@ class Generator_x86_64(Generator):
         codeSet = self.generateExpression(expr.expr)
         op = expr.op
         if isinstance(op, token.Not):
-            codeOp  = "cmpl     $0, %eax\n"
-            codeOp += "movl     $0, %eax\n"
-            codeOp += "sete     %al\n"
+            codeOp = [  "cmpl     $0, %eax",
+                        "movl     $0, %eax",
+                        "sete     %al"]
         elif isinstance(op, token.Neg):
-            codeOp =  "neg      %eax\n"
+            codeOp =  [ "neg      %eax"]
         elif isinstance(op, token.Complement):
-            codeOp =  "not      %eax\n"
+            codeOp =  [ "not      %eax"]
         else:
             raise UnknownExpressionError(expr)
         code = codeSet+codeOp
@@ -111,76 +113,73 @@ class Generator_x86_64(Generator):
         e2 = expr.expr2
 
         codeSet1 = self.generateExpression(e1)
-        codePush1 = "pushq    %rax\n"
+        codePush1 = [   "pushq    %rax"]
         codeSet2 = self.generateExpression(e2)
-        codeSet2 += "movl     %eax, %ecx\n"
-        codePop1  = "popq     %rax\n"
+        codeSet2 += [   "movl     %eax, %ecx"]
+        codePop1  = [   "popq     %rax"]
 
         if isinstance(op, token.Add):
-            codeOp = "addl     %ecx, %eax\n"
+            codeOp = [  "addl     %ecx, %eax"]
         elif isinstance(op, token.Neg):
-            codeOp = "subl     %ecx, %eax\n"
+            codeOp = [  "subl     %ecx, %eax"]
         elif isinstance(op, token.Mult):
-            codeOp = "imull    %ecx, %eax\n"
+            codeOp = [  "imull    %ecx, %eax"]
         elif isinstance(op, token.Div):
-            #zero out rdx
-            codeOp = "movl     $0, %edx\n"
-            #divide!
-            codeOp += "idivl    %ecx\n"
+            #zero out rdx and divide
+            codeOp = [  "movl     $0, %edx",
+                        "idivl    %ecx"]
         elif isinstance(op, token.Mod):
-            #zero out rdx
-            codeOp =  "movl     $0, %edx\n"
-            #divide!
-            codeOp += "idivl    %ecx\n"
-            codeOp += "movl     %edx, %eax\n"
+            #zero out rdx and divide
+            codeOp =  [ "movl     $0, %edx",
+                        "idivl    %ecx",
+                        "movl     %edx, %eax"]
         elif isinstance(op, token.BitShiftL):
-            codeOp =  "shll     %cl, %eax\n"
+            codeOp =  [ "shll     %cl, %eax"]
         elif isinstance(op, token.BitShiftR):
-            codeOp =  "shrl     %cl, %eax\n"
+            codeOp =  [ "shrl     %cl, %eax"]
         elif isinstance(op, token.BitAnd):
-            codeOp =  "and      %ecx, %eax\n"
+            codeOp =  [ "and      %ecx, %eax"]
         elif isinstance(op, token.BitOr):
-            codeOp =  "orl      %ecx, %eax\n"
+            codeOp =  [ "orl      %ecx, %eax"]
         elif isinstance(op, token.BitXor):
-            codeOp =  "xorl     %ecx, %eax\n"
+            codeOp =  [ "xorl     %ecx, %eax"]
         elif isinstance(op, token.Equal):
-            codeOp =  "cmpl     %eax, %ecx\n"
-            codeOp += "movl     $0, %eax\n"
-            codeOp += "sete     %al\n"
+            codeOp =  [ "cmpl     %eax, %ecx",
+                        "movl     $0, %eax",
+                        "sete     %al"]
         elif isinstance(op, token.NotEqual):
-            codeOp =  "cmpl     %eax, %ecx\n"
-            codeOp += "movl     $0, %eax\n"
-            codeOp += "setne    %al\n"
+            codeOp =  [ "cmpl     %eax, %ecx",
+                        "movl     $0, %eax",
+                        "setne    %al"]
         elif isinstance(op, token.LessThan):
-            codeOp =  "cmpl     %ecx, %eax\n"
-            codeOp += "movl     $0, %eax\n"
-            codeOp += "sets     %al\n"
+            codeOp =  [ "cmpl     %ecx, %eax",
+                        "movl     $0, %eax",
+                        "sets     %al"]
         elif isinstance(op, token.GreaterThan):
-            codeOp =  "cmpl     %eax, %ecx\n"
-            codeOp += "movl     $0, %eax\n"
-            codeOp += "sets     %al\n"
+            codeOp =  [ "cmpl     %eax, %ecx",
+                        "movl     $0, %eax",
+                        "sets     %al"]
         elif isinstance(op, token.LessThanEqual):
-            codeOp =  "cmpl     %eax, %ecx\n"
-            codeOp += "movl     $0, %eax\n"
-            codeOp += "setns    %al\n"
+            codeOp =  [ "cmpl     %eax, %ecx",
+                        "movl     $0, %eax",
+                        "setns    %al"]
         elif isinstance(op, token.GreaterThanEqual):
-            codeOp =  "cmpl     %ecx, %eax\n"
-            codeOp += "movl     $0, %eax\n"
-            codeOp += "setns    %al\n"
+            codeOp =  [ "cmpl     %ecx, %eax",
+                        "movl     $0, %eax",
+                        "setns    %al"]
         elif isinstance(op, token.And):
-            codeOp =  "cmpl     $0, %eax\n"
-            codeOp += "movl     $0, %eax\n"
-            codeOp += "setne    %al\n"
-            codeOp += "cmpl     $0, %ecx\n"
-            codeOp += "movl     $0, %ecx\n"
-            codeOp += "setne    %cl\n"
-            codeOp += "andl     %ecx, %eax\n"
+            codeOp =  [ "cmpl     $0, %eax",
+                        "movl     $0, %eax",
+                        "setne    %al",
+                        "cmpl     $0, %ecx",
+                        "movl     $0, %ecx",
+                        "setne    %cl",
+                        "andl     %ecx, %eax"]
         elif isinstance(op, token.Or):
-            codeOp =  "orl      %ecx, %eax\n"
-            codeOp += "cmpl     $0, %eax\n"
-            codeOp += "movl     $0, %eax\n"
-            codeOp += "setne    %al\n"
-
+            codeOp =  [ "orl      %ecx, %eax",
+                        "cmpl     $0, %eax",
+                        "movl     $0, %eax",
+                        "setne    %al"]
         else:
             raise UnknownExpressionError(expr)
 
@@ -192,7 +191,7 @@ class Generator_x86(Generator):
 
     def constExprCode(self, expr):
         val = expr.value.val
-        code = "movl     ${0:s}, %eax\n".format(val)
+        code = ["movl     ${0:s}, %eax".format(val)]
         return code
 
     def unaryOpCode(self, expr):
@@ -200,13 +199,13 @@ class Generator_x86(Generator):
         codeSet = self.generateExpression(expr.expr)
         op = expr.op
         if isinstance(op, token.Not):
-            codeOp  = "cmpl     $0, %eax\n"
-            codeOp += "movl     $0, %eax\n"
-            codeOp += "sete     %al\n"
+            codeOp  = [ "cmpl     $0, %eax",
+                        "movl     $0, %eax",
+                        "sete     %al"]
         elif isinstance(op, token.Neg):
-            codeOp =  "neg      %eax\n"
+            codeOp =  [ "neg      %eax"]
         elif isinstance(op, token.Complement):
-            codeOp =  "not      %eax\n"
+            codeOp =  [ "not      %eax"]
         else:
             raise UnknownExpressionError(expr)
         code = codeSet+codeOp
@@ -220,26 +219,26 @@ class Generator_x86(Generator):
         e2 = expr.expr2
 
         codeSet1 = self.generateExpression(e1)
-        codePush1 = "pushl    %eax\n"
+        codePush1 = [   "pushl    %eax"]
         codeSet2 = self.generateExpression(e2)
-        codePop1  = "popl     %ecx\n"
+        codePop1  = [   "popl     %ecx"]
 
         if isinstance(op, token.Add):
-            codeOp = "addl     %ecx, %eax\n"
+            codeOp = [  "addl     %ecx, %eax"]
         elif isinstance(op, token.Neg):
-            codeOp = "subl     %eax, %ecx\n"
-            codeOp += "movl     %ecx, %eax\n"
+            codeOp = [  "subl     %eax, %ecx",
+                        "movl     %ecx, %eax"]
         elif isinstance(op, token.Mult):
-            codeOp = "imull    %ecx, %eax\n"
+            codeOp = [  "imull    %ecx, %eax"]
         elif isinstance(op, token.Div):
             #swap e2 and e1 so e1 is in eax
-            codeOp  = "movl     %ecx, %edx\n"
-            codeOp += "movl     %eax, %ecx\n"
-            codeOp += "movl     %edx, %eax\n"
+            codeOp  = [ "movl     %ecx, %edx",
+                        "movl     %eax, %ecx",
+                        "movl     %edx, %eax",
             #zero out rdx
-            codeOp += "movl     $0, %edx\n"
+                        "movl     $0, %edx",
             #divide!
-            codeOp += "idivl    %ecx\n"
+                        "idivl    %ecx"]
         else:
             raise UnknownExpressionError(expr)
 
