@@ -1,0 +1,2 @@
+class ThiccError(Exception):
+    pass

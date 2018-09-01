@@ -66,8 +66,8 @@ class BinaryOpE(Expression):
     def __str__(self, level=0):
         buf = level * "   "
         out = buf + "Expression(BinaryOp): " + self.op.val + '\n'
-        out += self.term1.__str__(level=level+1)
-        out += self.term2.__str__(level=level+1)
+        out += self.expr1.__str__(level=level+1)
+        out += self.expr2.__str__(level=level+1)
         return out
 
 class ConstantE(Expression):
@@ -78,7 +78,7 @@ class ConstantE(Expression):
     
     def __str__(self, level=0):
         buf = level * "   "
-        out = buf + "Expression(Constant): " + self.value.val
+        out = buf + "Expression(Constant): " + self.value.val + '\n'
         return out
 
 class UnaryOpE(Expression):

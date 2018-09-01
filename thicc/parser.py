@@ -1,7 +1,8 @@
 from . import token
 from . import symbol
+from . import exception
 
-class ParseError(Exception):
+class ParseError(exception.ThiccError):
     pass
 
 class InvalidExpressionError(ParseError):
@@ -108,12 +109,13 @@ class Parser():
         if len(opOrder) == 1:
             parseFunc = self.parseFactor
         ops = opOrder[0]
+        table = opOrder[1:]
 
-        expr = parseFunc(tokens, opOrder[1:])
+        expr = parseFunc(tokens, table)
         if len(tokens) > 0:
             tok = tokens.pop()
             while any([isinstance(tok,opCls) for opCls in ops]):
-                el = parseFunc(tokens, opOrder[1:])
+                el = parseFunc(tokens, table)
                 expr = symbol.BinaryOpE(tok, expr, el)
                 if len(tokens) > 0:
                     tok = tokens.pop()

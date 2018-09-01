@@ -160,6 +160,40 @@ class TestParser(unittest.TestCase):
                 symbol.BinaryOpE(token.Neg(), sym10, sym5))
         self.compareExpression(toks, sym)
 
+    def test_orderOfOperations(self):
+        # 5 || 10 && 5 == 10 >= 5 << 10 + 5 * -10
+        t5 = token.IntC("5")
+        s5 = symbol.ConstantE(t5)
+        t10 = token.IntC("10")
+        s10 = symbol.ConstantE(t10)
+        toks = [t5, token.Or(), t10, token.And(), t5, token.Equal(), t10,
+                token.GreaterThanEqual(), t5, token.BitShiftL(), t10,
+                token.Add(), t5, token.Mult(), token.Neg(), t10]
+        sym = symbol.BinaryOpE(token.Or(), s5,
+                symbol.BinaryOpE(token.And(), s10,
+                symbol.BinaryOpE(token.Equal(), s5,
+                symbol.BinaryOpE(token.GreaterThanEqual(), s10,
+                symbol.BinaryOpE(token.BitShiftL(), s5,
+                symbol.BinaryOpE(token.Add(), s10,
+                symbol.BinaryOpE(token.Mult(), s5,
+                symbol.UnaryOpE(token.Neg(), s10))))))))
+        self.compareExpression(toks, sym)
+
+        # -5 % 10 - 5 >> 10 < 5 != 10 && 5 || 10
+        toks = [token.Neg(), t5, token.Mod(), t10, token.Neg(), t5, 
+                token.BitShiftR(), t10, token.LessThan(), t5, 
+                token.NotEqual(), t10, token.And(), t5, token.Or(), t10]
+        sym = symbol.BinaryOpE(token.Or(),
+                symbol.BinaryOpE(token.And(),
+                symbol.BinaryOpE(token.NotEqual(), 
+                symbol.BinaryOpE(token.LessThan(),
+                symbol.BinaryOpE(token.BitShiftR(),
+                symbol.BinaryOpE(token.Neg(), 
+                symbol.BinaryOpE(token.Mod(),
+                symbol.UnaryOpE(token.Neg(), s5), s10), s5), s10), s5), s10),
+                    s5), s10)
+        self.compareExpression(toks, sym)
+
     def test_statement(self):
 
         toks = [token.ReturnK(), token.IntC("36"), token.Semicolon()]

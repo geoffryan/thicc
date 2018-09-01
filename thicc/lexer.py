@@ -1,6 +1,7 @@
 from . import token
+from . import exception
 
-class LexError(Exception):
+class LexError(exception.ThiccError):
     pass
 
 class LexIllegalCharError(LexError):

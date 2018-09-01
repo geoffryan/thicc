@@ -1,7 +1,8 @@
 from . import token
 from . import symbol
+from . import exception
 
-class GeneratorError(Exception):
+class GeneratorError(exception.ThiccError):
     pass
 
 class UnknownStatementError(GeneratorError):
@@ -61,8 +62,7 @@ class Generator():
 
     def generateExpression(self, expr):
         if isinstance(expr, symbol.ConstantE):
-            val = expr.value.val
-            code = "movl     ${0:s}, %eax\n".format(val)
+            code = self.constExprCode(expr)
         elif isinstance(expr, symbol.UnaryOpE):
             code = self.unaryOpCode(expr)
         elif isinstance(expr, symbol.BinaryOpE):
@@ -70,6 +70,78 @@ class Generator():
         else:
             raise UnknownExpressionError(expr)
 
+        return code
+
+    def constExprCode(self, expr):
+        pass
+    def unaryOpCode(self, expr):
+        pass
+    def binaryOpCode(self, expr):
+        pass
+
+class Generator_x86(Generator):
+
+    def constExprCode(self, expr):
+        val = expr.value.val
+        code = "movl     ${0:s}, %eax\n".format(val)
+        return code
+
+    def unaryOpCode(self, expr):
+
+        codeSet = self.generateExpression(expr.expr)
+        op = expr.op
+        if isinstance(op, token.Not):
+            codeOp  = "cmpl     $0, %eax\n"
+            codeOp += "movl     $0, %eax\n"
+            codeOp += "sete     %al\n"
+        elif isinstance(op, token.Neg):
+            codeOp =  "neg      %eax\n"
+        elif isinstance(op, token.Complement):
+            codeOp =  "not      %eax\n"
+        else:
+            raise UnknownExpressionError(expr)
+        code = codeSet+codeOp
+
+        return code
+
+    def binaryOpCode(self, expr):
+
+        op = expr.op
+        e1 = expr.expr1
+        e2 = expr.expr2
+
+        codeSet1 = self.generateExpression(e1)
+        codePush1 = "pushl    %eax\n"
+        codeSet2 = self.generateExpression(e2)
+        codePop1  = "popl     %ecx\n"
+
+        if isinstance(op, token.Add):
+            codeOp = "addl     %ecx, %eax\n"
+        elif isinstance(op, token.Neg):
+            codeOp = "subl     %eax, %ecx\n"
+            codeOp += "movl     %ecx, %eax\n"
+        elif isinstance(op, token.Mult):
+            codeOp = "imull    %ecx, %eax\n"
+        elif isinstance(op, token.Div):
+            #swap e2 and e1 so e1 is in eax
+            codeOp  = "movl     %ecx, %edx\n"
+            codeOp += "movl     %eax, %ecx\n"
+            codeOp += "movl     %edx, %eax\n"
+            #zero out rdx
+            codeOp += "movl     $0, %edx\n"
+            #divide!
+            codeOp += "idivl    %ecx\n"
+        else:
+            raise UnknownExpressionError(expr)
+
+        code = codeSet1+codePush1+codeSet2+codePop1+codeOp
+        return code
+
+class Generator_x86_64(Generator):
+
+    def constExprCode(self, expr):
+        val = expr.value.val
+        code = "movl     ${0:s}, %eax\n".format(val)
         return code
 
     def unaryOpCode(self, expr):

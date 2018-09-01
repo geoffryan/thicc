@@ -4,10 +4,13 @@ from . import generator
 
 class Compiler():
 
-    def __init__(self):
+    def __init__(self, genType="m64"):
         self.lexer = lexer.Lexer()
         self.parser = parser.Parser()
-        self.generator = generator.Generator()
+        if genType == "m32":
+            self.generator = generator.Generator_x86()
+        else:
+            self.generator = generator.Generator_x86_64()
 
     def compileC(self, text):
         toks = self.lexer.tokenize(text)
@@ -24,8 +27,8 @@ class Compiler():
         toks = self.lexer.tokenize(text)
         return toks
 
-def compileC(text):
-    compiler = Compiler()
+def compileC(text, genType="m64"):
+    compiler = Compiler(genType)
     code = compiler.compileC(text)
     return code
 
