@@ -50,6 +50,8 @@ class Lexer():
                     "=":token.Assign}
         self.keywords = {'int':token.IntK,
                         'return':token.ReturnK}
+        self.comments = {   '//': '\n',
+                            '/*': '*/'}
         self.intchars = '0123456789'
         self.alchars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
         self.alnumchars = self.intchars + self.alchars
@@ -60,12 +62,42 @@ class Lexer():
         toks = []
         start = 0
         readingComment = False
+        commentEnd = None
+        commentStart = None
         readingExpression = False
         readingPunct = False
 
-        for i in range(len(inputStr)):
-            c = inputStr[i]
+        i = 0
+        while i < len(inputStr):
+            #Handle comments
+            if readingComment:
+                if commentEnd == inputStr[i:i+len(commentEnd)]:
+                    i += len(commentEnd)
+                    commentStart = None
+                    commentEnd = None
+                    readingComment = False
+                    continue
+                else:
+                    i += 1
+                    continue
+            else:
+                for com in self.comments.keys():
+                    if inputStr[i:i+len(com)] == com:
+                        if readingExpression:
+                            toks.append(self._tokExp(inputStr[start:i]))
+                            readingExpression = False
+                        elif readingPunct:
+                            toks += self._tokPunct(inputStr[start:i])
+                            readingPunct = False
+                        commentStart = com
+                        commentEnd = self.comments[com]
+                        readingComment = True
+                        break
+                if readingComment:
+                    i += len(commentStart)
+                    continue
 
+            c = inputStr[i]
             if c.isspace():
                 if readingExpression:
                     toks.append(self._tokExp(inputStr[start:i]))
@@ -98,6 +130,7 @@ class Lexer():
                     start = i
                 else:
                     raise LexIllegalCharError(c)
+            i += 1
         if readingExpression:
             toks.append(self._tokExp(inputStr[start:]))
         elif readingPunct:

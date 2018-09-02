@@ -35,9 +35,9 @@ def compileC(text, genType="m64"):
 def parse(text):
     compiler = Compiler()
     ast = compiler.parse(text)
-    return code
+    return ast
 
 def lex(text):
     compiler = Compiler()
     tok = compiler.lex(text)
-    return code
+    return tok
