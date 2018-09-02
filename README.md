@@ -37,9 +37,9 @@ $ python setup.py develop
 
 This package will install the `thicc` command, which emulates the basic behviour of `gcc`:
 ```bash
-$ thicc myfile.c   #Produces executable a.out
-$ thicc -o myfile myfile.c #Produces executable myfile
-$ thicc -S myfile.c #Produces assembly file myfile.s
+$ thicc myfile.c            #Produces executable a.out
+$ thicc -o myfile myfile.c  #Produces executable myfile
+$ thicc -S myfile.c         #Produces assembly file myfile.s
 ```
 Additionally, passing `--lex` or `--parse` will only run the lexer or parser and print the output.
 
