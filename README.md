@@ -6,12 +6,17 @@ Currently works for a small subset of C:
 * Programs
     - A single `.c` file with a single function
 * Functions
-    - `int` returning functions with no arguments and a single statement
+    - `int` returning functions with no arguments, comprised of several statements.
 * Statements
     - The `return` statement, which contains a single expression.
+    - (int) Variable declarations (with optional initializations)
+    - Expression evaluation
 * Expressions
     - Integer constants
-    - Unary operations '-!~' on integer constants.
+    - Variable references
+    - Unary operations '-!~'
+    - Binary operations '+ - * / % == != < <= > >= && || & | ^ << >>'
+    - Variable assignment '='
 
 They cannot yet print their output!  To check a program has correctly compiled, check the return code with `$?`:
 ```bash
