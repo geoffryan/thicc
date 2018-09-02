@@ -14,9 +14,9 @@ Currently works for a small subset of C:
 * Expressions
     - Integer constants
     - Variable references
-    - Unary operations '-!~'
-    - Binary operations '+ - * / % == != < <= > >= && || & | ^ << >>'
-    - Variable assignment '='
+    - Unary operations: - ! ~
+    - Binary operations: + - * / % == != < <= > >= && || & | ^ << >>
+    - Variable assignment: =
 
 They cannot yet print their output!  To check a program has correctly compiled, check the return code with `$?`:
 ```bash
