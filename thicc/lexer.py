@@ -46,7 +46,8 @@ class Lexer():
                     '|':token.BitOr,
                     '^':token.BitXor,
                     '&&':token.And,
-                    '||':token.Or}
+                    '||':token.Or,
+                    "=":token.Assign}
         self.keywords = {'int':token.IntK,
                         'return':token.ReturnK}
         self.intchars = '0123456789'

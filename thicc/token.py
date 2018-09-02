@@ -94,6 +94,16 @@ class UnaryOp(Operator):
 class BinaryOp(Operator):
     pass
 
+class AssignmentOp(Operator):
+    pass
+
+# Assignment Operators
+
+class Assign(AssignmentOp):
+    def __init__(self):
+        self.val = '='
+
+
 # Unary Operations
 
 class Not(UnaryOp):

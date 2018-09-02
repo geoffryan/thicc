@@ -63,6 +63,14 @@ class TestThicc(unittest.TestCase):
         path = "test/data/stage_4/"
         self.runSampleTestsInvalid(path, "m64")
     
+    def test_stage5_valid(self):
+        path = "test/data/stage_5/"
+        self.runSampleTestsValid(path, "m64")
+
+    def test_stage5_invalid(self):
+        path = "test/data/stage_5/"
+        self.runSampleTestsInvalid(path, "m64")
+    
 
     def runSampleTestsValid(self, rootpath, genType):
         path = rootpath+"valid/"
@@ -72,7 +80,7 @@ class TestThicc(unittest.TestCase):
             if filename[-2:] != ".c":
                 continue
             #Expected Result
-            flags = ["-Wno-constant-logical-operand"]
+            flags = ["-Wno-constant-logical-operand", "-Wno-unused-value"]
             if genType == "m32":
                 flags += ["-m32"]
             command = ["gcc"]+flags+[path+filename]

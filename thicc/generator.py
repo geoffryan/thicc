@@ -1,6 +1,7 @@
 from . import token
 from . import symbol
 from . import exception
+from . import varmap
 
 class GeneratorError(exception.ThiccError):
     pass
@@ -44,31 +45,59 @@ class Generator():
         return code
 
     def generateFunction(self, func):
-        name = func.name.val
-        head1 = [".globl _{0:s}".format(name)]
-        head2 = ["_{0:s}:".format(name)]
-        body = self.generateStatement(func.body)
 
-        code = head1 + head2 + body
+        vmap = varmap.VarMap()
+
+        name = func.name.val
+        head1 = [   ".globl _{0:s}".format(name)]
+        head2 = [   "_{0:s}:".format(name)]
+        prologue = ["push     %rbp",
+                    "movq     %rsp, %rbp"]
+        body = []
+        for stmnt in func.body:
+            body += self.generateStatement(stmnt, vmap)
+
+        if len(func.body) == 0\
+                or not isinstance(func.body[-1], symbol.ReturnS):
+            ret0 = symbol.ReturnS(symbol.ConstantE(token.IntC("0")))
+            body += self.generateStatement(ret0, vmap)
+
+        code = head1 + head2 + prologue + body
         return code
 
-    def generateStatement(self, statement):
+    def generateStatement(self, statement, vmap):
         if isinstance(statement, symbol.ReturnS):
-            setValue = self.generateExpression(statement.value)
+            setValue = self.generateExpression(statement.value, vmap)
+            epilogue = [    "movq     %rbp, %rsp",
+                            "pop      %rbp"]
             returnLine = ["ret"]
-            code = setValue+returnLine
+            code = setValue + epilogue + returnLine
+        elif isinstance(statement, symbol.DeclareS):
+            if statement.expr is not None:
+                init = self.generateExpression(statement.expr, vmap)
+            else:
+                init = [    "movq     $0, %rax"]
+            declare  = [    "push     %rax"]
+            vmap.add(statement.id)
+            code = init+declare
+        elif isinstance(statement, symbol.ExpressionS):
+            code = self.generateExpression(statement.expr, vmap)
         else:
             raise UnknownStatementError(statement)
 
         return code
 
-    def generateExpression(self, expr):
+    def generateExpression(self, expr, vmap):
         if isinstance(expr, symbol.ConstantE):
             code = self.constExprCode(expr)
+        elif isinstance(expr, symbol.VarRefE):
+            code = self.varRefCode(expr, vmap)
         elif isinstance(expr, symbol.UnaryOpE):
-            code = self.unaryOpCode(expr)
+            code = self.unaryOpCode(expr, vmap)
         elif isinstance(expr, symbol.BinaryOpE):
-            code = self.binaryOpCode(expr)
+            code = self.binaryOpCode(expr, vmap)
+        elif isinstance(expr, symbol.AssignE):
+            code = self.assignOpCode(expr, vmap)
         else:
             raise UnknownExpressionError(expr)
 
@@ -76,9 +105,13 @@ class Generator():
 
     def constExprCode(self, expr):
         pass
-    def unaryOpCode(self, expr):
+    def varRefCode(self, expr, vmap):
         pass
-    def binaryOpCode(self, expr):
+    def unaryOpCode(self, expr, vmap):
+        pass
+    def binaryOpCode(self, expr, vmap):
+        pass
+    def assignOpCode(self, expr, vmap):
         pass
 
 class Generator_x86_64(Generator):
@@ -88,9 +121,14 @@ class Generator_x86_64(Generator):
         code = ["movl     ${0:s}, %eax".format(val)]
         return code
 
-    def unaryOpCode(self, expr):
+    def varRefCode(self, expr, vmap):
+        offset = vmap.getOffset(expr.id)
+        code = ["movq     {0:d}(%rbp), %rax".format(offset)]
+        return code
 
-        codeSet = self.generateExpression(expr.expr)
+    def unaryOpCode(self, expr, vmap):
+
+        codeSet = self.generateExpression(expr.expr, vmap)
         op = expr.op
         if isinstance(op, token.Not):
             codeOp = [  "cmpl     $0, %eax",
@@ -106,15 +144,15 @@ class Generator_x86_64(Generator):
 
         return code
 
-    def binaryOpCode(self, expr):
+    def binaryOpCode(self, expr, vmap):
 
         op = expr.op
         e1 = expr.expr1
         e2 = expr.expr2
 
-        codeSet1 = self.generateExpression(e1)
+        codeSet1 = self.generateExpression(e1, vmap)
         codePush1 = [   "pushq    %rax"]
-        codeSet2 = self.generateExpression(e2)
+        codeSet2 = self.generateExpression(e2, vmap)
         codeSet2 += [   "movl     %eax, %ecx"]
         codePop1  = [   "popq     %rax"]
 
@@ -186,7 +224,14 @@ class Generator_x86_64(Generator):
         code = codeSet1+codePush1+codeSet2+codePop1+codeOp
         return code
 
+    def assignOpCode(self, expr, vmap):
+        offset = vmap.getOffset(expr.id)
+        calc = self.generateExpression(expr.expr, vmap)
+        assign = [  "movq     %rax, {0:d}(%rbp)".format(offset)]
+        code = calc + assign
+        return code
 
+"""
 class Generator_x86(Generator):
 
     def constExprCode(self, expr):
@@ -244,3 +289,4 @@ class Generator_x86(Generator):
 
         code = codeSet1+codePush1+codeSet2+codePop1+codeOp
         return code
+"""

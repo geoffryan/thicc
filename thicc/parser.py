@@ -77,32 +77,95 @@ class Parser():
         tok = tokens.pop()
         if not isinstance(tok, token.OpenBrace):
             raise InvalidFunctionError(tok.val)
+        tokens.append(tok)
 
-        body = self.parseStatement(tokens)
-
-        tok = tokens.pop()
-        if not isinstance(tok, token.ClosedBrace):
-            raise InvalidFunctionError(tok.val)
+        #body is a list of statements, the braces have been removed
+        body = self.parseBlock(tokens)
 
         return symbol.Function(ident, body)
+
+    def parseBlock(self, tokens):
+        # return a list of statements.  If the block begins with a brace "{"
+        # read statements until "}".  Otherise parse a single statement and
+        # return it in a list [stmnt]
+
+        tok = tokens.pop()
+
+        if isinstance(tok, token.OpenBrace):
+            block = []
+            tok = tokens.pop()
+            while not isinstance(tok, token.ClosedBrace):
+                tokens.append(tok)
+                stmnt = self.parseStatement(tokens)
+                block.append(stmnt)
+                if len(tokens)==0:
+                    raise UnmatchedBraceError()
+                tok = tokens.pop()
+        else:
+            tokens.append(tok)
+            stmnt = self.parseStatement(tokens)
+            block = [stmnt]
+
+        return block
 
     def parseStatement(self, tokens):
         tok = tokens.pop()
         #Check this is a return statement
-        if not isinstance(tok, token.ReturnK):
-            raise InvalidStatementError(tok.val)
-
-        expr = self.parseExpression(tokens)
+        if isinstance(tok, token.ReturnK):
+            expr = self.parseExpression(tokens)
+            stmnt = symbol.ReturnS(expr)
+        #Maybe a variable declaration?
+        elif isinstance(tok, token.IntK):
+            idTok = tokens.pop()
+            if not isinstance(idTok, token.Identifier):
+                raise InvalidStatementError(tok.val)
+            assignTok = tokens.pop()
+            if isinstance(assignTok, token.Assign):
+                expr = self.parseExpression(tokens)
+            elif isinstance(assignTok, token.Semicolon):
+                expr = None
+                tokens.append(assignTok)
+            else:
+                raise InvalidStatementError(tok.val)
+            stmnt = symbol.DeclareS(idTok, expr)
+        #Try just an expression, put back the first token first
+        else:
+            tokens.append(tok)
+            expr = self.parseExpression(tokens)
+            stmnt = symbol.ExpressionS(expr)
 
         tok = tokens.pop()
         if not isinstance(tok, token.Semicolon):
             raise InvalidStatementError(tok.val)
 
-        return symbol.ReturnS(expr)
+        return stmnt
     
     def parseExpression(self, tokens):
-        expr = self.parseBinOp(tokens, self.binOpOrder)
+        expr = self.parseAssignExpr(tokens)
         return expr
+
+    def parseAssignExpr(self, tokens):
+
+
+        expr = None
+
+        #Check if assignmentExpr
+        if len(tokens) >= 3:
+            tok1 = tokens.pop()
+            tok2 = tokens.pop()
+            if isinstance(tok1,token.Identifier)\
+                    and isinstance(tok2, token.Assign):
+                expr = self.parseExpression(tokens)
+                expr = symbol.AssignE(tok1, expr)
+            else:
+                tokens.append(tok2)
+                tokens.append(tok1)
+        
+        #If not, try the rest
+        if expr is None:
+            expr = self.parseBinOp(tokens, self.binOpOrder)
+        return expr
+
 
     def parseBinOp(self, tokens, opOrder):
         parseFunc = self.parseBinOp
@@ -139,5 +202,7 @@ class Parser():
             return symbol.UnaryOpE(tok, fac)
         elif isinstance(tok, token.Constant):
             return symbol.ConstantE(tok)
+        elif isinstance(tok, token.Identifier):
+            return symbol.VarRefE(tok)
         raise InvalidExpressionError(tok.val)
 

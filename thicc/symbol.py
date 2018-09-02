@@ -36,7 +36,8 @@ class Function(ASTNode):
     def __str__(self, level=0):
         buf = level * "   "
         out = buf + "Function: " + self.name.val + '\n'
-        out += self.body.__str__(level=level+1)
+        for stmnt in body:
+            out += stmnt.__str__(level=level+1)
         return out
 
 
@@ -81,6 +82,26 @@ class ConstantE(Expression):
         out = buf + "Expression(Constant): " + self.value.val + '\n'
         return out
 
+class VarRefE(Expression):
+    def __init__(self, idTok):
+        super().__init__()
+        self.id = idTok
+    def __str__(self, level=0):
+        buf = level * "   "
+        out = buf + "Expression(Variable): " + self.id.val + '\n'
+        return out
+
+class AssignE(Expression):
+    def __init__(self, idTok, expr):
+        super().__init__()
+        self.id = idTok
+        self.expr = expr
+    def __str__(self, level=0):
+        buf = level * "   "
+        out = buf + "Expression(Assign): " + self.id.val + '\n'
+        out += self.expr.__str__(level=level+1)
+        return out
+
 class UnaryOpE(Expression):
     def __init__(self, opTok, expr):
         super().__init__()
@@ -107,5 +128,29 @@ class ReturnS(Statement):
         buf = level * "   "
         out = buf + "Statement(Return):" + '\n'
         out += self.value.__str__(level=level+1)
+        return out
+
+class ExpressionS(Statement):
+    def __init__(self, expr):
+        super().__init__()
+        self.expr = expr
+
+    def __str__(self, level=0):
+        buf = level * "   "
+        out = buf + "Statement(Expression):"+'\n'
+        out += self.value.__str__(level=level+1)
+        return out
+
+class DeclareS(Statement):
+    def __init__(self, idTok, expr=None):
+        super().__init__()
+        self.id = idTok
+        self.expr = expr
+
+    def __str__(self, level=0):
+        buf = level * "   "
+        out = buf + "Statement(Declare):" + self.id.val+'\n'
+        if self.expr is not None:
+            out += self.value.__str__(level=level+1)
         return out
 

@@ -55,6 +55,7 @@ class TestLexer(unittest.TestCase):
         self.compareSingleToken('^', token.BitXor)
         self.compareSingleToken('&&', token.And)
         self.compareSingleToken('||', token.Or)
+        self.compareSingleToken('=', token.Assign)
 
     def test_keywork_single(self):
         self.compareSingleToken('return', token.ReturnK)
@@ -71,6 +72,18 @@ class TestLexer(unittest.TestCase):
         self.compareSingleToken('abc', token.Identifier)
         self.compareSingleToken('DEF', token.Identifier)
         self.compareSingleToken('x2', token.Identifier)
+
+    def test_assignmentOp(self):
+        txt = "a=3"
+        cls = [token.Identifier, token.Assign, token.IntC]
+        val = ["a", "", "3"]
+        self.compareMultiToken(txt, cls, val)
+        
+        txt = "int x = 34;"
+        cls = [token.IntK, token.Identifier, token.Assign, token.IntC,
+                token.Semicolon]
+        val = ["", "x", "", "34", ""]
+        self.compareMultiToken(txt, cls, val)
 
     def test_unaryOp(self):
         txt = "!a"
