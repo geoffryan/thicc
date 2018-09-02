@@ -117,11 +117,17 @@ class TestThicc(unittest.TestCase):
         files = os.listdir(path)
 
         for filename in files:
+
+            if filename[:10] == "syntax_err":
+                e = thicc.parser.ParseError
+            else:
+                e = thicc.exception.ThiccError
+
             #Test Result
             with open(path+filename, "r") as f:
                 text = f.read()
            
-            self.assertRaises(thicc.exception.ThiccError, thicc.compileC, text, genType)
+            self.assertRaises(e, thicc.compileC, text, genType)
 
 
 if __name__ == "__main__":

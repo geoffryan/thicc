@@ -146,7 +146,6 @@ class Parser():
 
     def parseAssignExpr(self, tokens):
 
-
         expr = None
 
         #Check if assignmentExpr
@@ -154,9 +153,9 @@ class Parser():
             tok1 = tokens.pop()
             tok2 = tokens.pop()
             if isinstance(tok1,token.Identifier)\
-                    and isinstance(tok2, token.Assign):
+                    and isinstance(tok2, token.AssignmentOp):
                 expr = self.parseExpression(tokens)
-                expr = symbol.AssignE(tok1, expr)
+                expr = symbol.AssignE(tok1, tok2, expr)
             else:
                 tokens.append(tok2)
                 tokens.append(tok1)

@@ -103,6 +103,48 @@ class Assign(AssignmentOp):
     def __init__(self):
         self.val = '='
 
+class CompoundAssignmentOp(AssignmentOp):
+    pass
+
+class AssignAdd(CompoundAssignmentOp):
+    def __init__(self):
+        self.val = '+='
+
+class AssignSub(CompoundAssignmentOp):
+    def __init__(self):
+        self.val = '-='
+
+class AssignMult(CompoundAssignmentOp):
+    def __init__(self):
+        self.val = '*='
+
+class AssignDiv(CompoundAssignmentOp):
+    def __init__(self):
+        self.val = '/='
+
+class AssignMod(CompoundAssignmentOp):
+    def __init__(self):
+        self.val = '%='
+
+class AssignBShiftL(CompoundAssignmentOp):
+    def __init__(self):
+        self.val = '<<='
+
+class AssignBShiftR(CompoundAssignmentOp):
+    def __init__(self):
+        self.val = '>>='
+
+class AssignBAnd(CompoundAssignmentOp):
+    def __init__(self):
+        self.val = '&='
+
+class AssignBOr(CompoundAssignmentOp):
+    def __init__(self):
+        self.val = '|='
+
+class AssignBXor(CompoundAssignmentOp):
+    def __init__(self):
+        self.val = '^='
 
 # Unary Operations
 
@@ -118,6 +160,17 @@ class Complement(UnaryOp):
     def __init__(self):
         self.val = '~'
 
+class IncrementOp(UnaryOp):
+    pass
+
+class Increment(IncrementOp):
+    def __init__(self):
+        self.val = "++"
+
+class Decrement(IncrementOp):
+    def __init__(self):
+        self.val = "--"
+        
 #Binary Operations
 
 class Add(BinaryOp):

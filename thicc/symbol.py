@@ -92,13 +92,15 @@ class VarRefE(Expression):
         return out
 
 class AssignE(Expression):
-    def __init__(self, idTok, expr):
+    def __init__(self, idTok, opTok, expr):
         super().__init__()
         self.id = idTok
+        self.op = opTok
         self.expr = expr
     def __str__(self, level=0):
         buf = level * "   "
-        out = buf + "Expression(Assign): " + self.id.val + '\n'
+        out = buf + "Expression(Assign): {0:s} {1:s}\n".format(
+                                            self.id.val, self.op.val)
         out += self.expr.__str__(level=level+1)
         return out
 

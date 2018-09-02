@@ -176,7 +176,7 @@ class Generator_x86_64(Generator):
         elif isinstance(op, token.BitShiftR):
             codeOp =  [ "shrl     %cl, %eax"]
         elif isinstance(op, token.BitAnd):
-            codeOp =  [ "and      %ecx, %eax"]
+            codeOp =  [ "andl     %ecx, %eax"]
         elif isinstance(op, token.BitOr):
             codeOp =  [ "orl      %ecx, %eax"]
         elif isinstance(op, token.BitXor):
@@ -227,7 +227,39 @@ class Generator_x86_64(Generator):
     def assignOpCode(self, expr, vmap):
         offset = vmap.getOffset(expr.id)
         calc = self.generateExpression(expr.expr, vmap)
-        assign = [  "movq     %rax, {0:d}(%rbp)".format(offset)]
+        if isinstance(expr.op, token.Assign):
+            assign = [  "movq     %rax, {0:d}(%rbp)".format(offset)]
+        elif isinstance(expr.op, token.AssignAdd):
+            assign = [  "addq     %rax, {0:d}(%rbp)".format(offset)]
+        elif isinstance(expr.op, token.AssignSub):
+            assign = [  "subq     %rax, {0:d}(%rbp)".format(offset)]
+        elif isinstance(expr.op, token.AssignMult):
+            assign = [  "imulq    {0:d}(%rbp)".format(offset),
+                        "movq     %rax, {0:d}(%rbp)".format(offset)]
+        elif isinstance(expr.op, token.AssignDiv):
+            assign = [  "movq     %rax, %rcx",
+                        "movq     {0:d}(%rbp), %rax".format(offset),
+                        "movq     $0, %rdx",
+                        "idivq    %rcx",
+                        "movq     %rax, {0:d}(%rbp)".format(offset)]
+        elif isinstance(expr.op, token.AssignMod):
+            assign = [  "movq     %rax, %rcx",
+                        "movq     {0:d}(%rbp), %rax".format(offset),
+                        "movq     $0, %rdx",
+                        "idivq    %rcx",
+                        "movq     %rdx, {0:d}(%rbp)".format(offset)]
+        elif isinstance(expr.op, token.AssignBShiftL):
+            assign = [  "movq     %rax, %rcx",
+                        "shlq     %cl, {0:d}(%rbp)".format(offset)]
+        elif isinstance(expr.op, token.AssignBShiftR):
+            assign = [  "movq     %rax, %rcx",
+                        "shrq     %cl, {0:d}(%rbp)".format(offset)]
+        elif isinstance(expr.op, token.AssignBAnd):
+            assign = [  "andq     %rax, {0:d}(%rbp)".format(offset)]
+        elif isinstance(expr.op, token.AssignBOr):
+            assign = [  "orq      %rax, {0:d}(%rbp)".format(offset)]
+        elif isinstance(expr.op, token.AssignBXor):
+            assign = [  "xorq     %rax, {0:d}(%rbp)".format(offset)]
         code = calc + assign
         return code
 

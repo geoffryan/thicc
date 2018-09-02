@@ -203,7 +203,67 @@ class TestParser(unittest.TestCase):
 
         # a = 42
         toks = [token.Identifier("a"), token.Assign(), token.IntC("42")]
-        sym = symbol.AssignE(token.Identifier("a"),
+        sym = symbol.AssignE(token.Identifier("a"), token.Assign(), 
+                                symbol.ConstantE(token.IntC("42")))
+        self.compareExpression(toks, sym)
+
+        # a += 42
+        toks = [token.Identifier("a"), token.AssignAdd(), token.IntC("42")]
+        sym = symbol.AssignE(token.Identifier("a"), token.AssignAdd(), 
+                                symbol.ConstantE(token.IntC("42")))
+        self.compareExpression(toks, sym)
+
+        # a -= 42
+        toks = [token.Identifier("a"), token.AssignSub(), token.IntC("42")]
+        sym = symbol.AssignE(token.Identifier("a"), token.AssignSub(), 
+                                symbol.ConstantE(token.IntC("42")))
+        self.compareExpression(toks, sym)
+
+        # a *= 42
+        toks = [token.Identifier("a"), token.AssignMult(), token.IntC("42")]
+        sym = symbol.AssignE(token.Identifier("a"), token.AssignMult(), 
+                                symbol.ConstantE(token.IntC("42")))
+        self.compareExpression(toks, sym)
+
+        # a /= 42
+        toks = [token.Identifier("a"), token.AssignDiv(), token.IntC("42")]
+        sym = symbol.AssignE(token.Identifier("a"), token.AssignDiv(), 
+                                symbol.ConstantE(token.IntC("42")))
+        self.compareExpression(toks, sym)
+
+        # a %= 42
+        toks = [token.Identifier("a"), token.AssignMod(), token.IntC("42")]
+        sym = symbol.AssignE(token.Identifier("a"), token.AssignMod(), 
+                                symbol.ConstantE(token.IntC("42")))
+        self.compareExpression(toks, sym)
+
+        # a <<= 42
+        toks = [token.Identifier("a"), token.AssignBShiftL(), token.IntC("42")]
+        sym = symbol.AssignE(token.Identifier("a"), token.AssignBShiftL(), 
+                                symbol.ConstantE(token.IntC("42")))
+        self.compareExpression(toks, sym)
+
+        # a >>= 42
+        toks = [token.Identifier("a"), token.AssignBShiftR(), token.IntC("42")]
+        sym = symbol.AssignE(token.Identifier("a"), token.AssignBShiftR(), 
+                                symbol.ConstantE(token.IntC("42")))
+        self.compareExpression(toks, sym)
+
+        # a &= 42
+        toks = [token.Identifier("a"), token.AssignBAnd(), token.IntC("42")]
+        sym = symbol.AssignE(token.Identifier("a"), token.AssignBAnd(), 
+                                symbol.ConstantE(token.IntC("42")))
+        self.compareExpression(toks, sym)
+
+        # a |= 42
+        toks = [token.Identifier("a"), token.AssignBOr(), token.IntC("42")]
+        sym = symbol.AssignE(token.Identifier("a"), token.AssignBOr(), 
+                                symbol.ConstantE(token.IntC("42")))
+        self.compareExpression(toks, sym)
+
+        # a ^= 42
+        toks = [token.Identifier("a"), token.AssignBXor(), token.IntC("42")]
+        sym = symbol.AssignE(token.Identifier("a"), token.AssignBXor(), 
                                 symbol.ConstantE(token.IntC("42")))
         self.compareExpression(toks, sym)
     

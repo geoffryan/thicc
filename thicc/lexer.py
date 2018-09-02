@@ -47,7 +47,19 @@ class Lexer():
                     '^':token.BitXor,
                     '&&':token.And,
                     '||':token.Or,
-                    "=":token.Assign}
+                    "=":token.Assign,
+                    "+=":token.AssignAdd,
+                    "-=":token.AssignSub,
+                    "*=":token.AssignMult,
+                    "/=":token.AssignDiv,
+                    "%=":token.AssignMod,
+                    "<<=":token.AssignBShiftL,
+                    ">>=":token.AssignBShiftR,
+                    "&=":token.AssignBAnd,
+                    "|=":token.AssignBOr,
+                    "^=":token.AssignBXor,
+                    "++":token.Increment,
+                    "--":token.Decrement}
         self.keywords = {'int':token.IntK,
                         'return':token.ReturnK}
         self.comments = {   '//': '\n',

@@ -79,6 +79,56 @@ class TestLexer(unittest.TestCase):
         val = ["a", "", "3"]
         self.compareMultiToken(txt, cls, val)
         
+        txt = "a+=3"
+        cls = [token.Identifier, token.AssignAdd, token.IntC]
+        val = ["a", "", "3"]
+        self.compareMultiToken(txt, cls, val)
+        
+        txt = "a-=3"
+        cls = [token.Identifier, token.AssignSub, token.IntC]
+        val = ["a", "", "3"]
+        self.compareMultiToken(txt, cls, val)
+        
+        txt = "a*=3"
+        cls = [token.Identifier, token.AssignMult, token.IntC]
+        val = ["a", "", "3"]
+        self.compareMultiToken(txt, cls, val)
+        
+        txt = "a/=3"
+        cls = [token.Identifier, token.AssignDiv, token.IntC]
+        val = ["a", "", "3"]
+        self.compareMultiToken(txt, cls, val)
+        
+        txt = "a%=3"
+        cls = [token.Identifier, token.AssignMod, token.IntC]
+        val = ["a", "", "3"]
+        self.compareMultiToken(txt, cls, val)
+        
+        txt = "a<<=3"
+        cls = [token.Identifier, token.AssignBShiftL, token.IntC]
+        val = ["a", "", "3"]
+        self.compareMultiToken(txt, cls, val)
+        
+        txt = "a>>=3"
+        cls = [token.Identifier, token.AssignBShiftR, token.IntC]
+        val = ["a", "", "3"]
+        self.compareMultiToken(txt, cls, val)
+        
+        txt = "a&=3"
+        cls = [token.Identifier, token.AssignBAnd, token.IntC]
+        val = ["a", "", "3"]
+        self.compareMultiToken(txt, cls, val)
+        
+        txt = "a|=3"
+        cls = [token.Identifier, token.AssignBOr, token.IntC]
+        val = ["a", "", "3"]
+        self.compareMultiToken(txt, cls, val)
+        
+        txt = "a^=3"
+        cls = [token.Identifier, token.AssignBXor, token.IntC]
+        val = ["a", "", "3"]
+        self.compareMultiToken(txt, cls, val)
+        
         txt = "int x = 34;"
         cls = [token.IntK, token.Identifier, token.Assign, token.IntC,
                 token.Semicolon]
