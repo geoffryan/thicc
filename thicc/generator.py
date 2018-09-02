@@ -230,9 +230,11 @@ class Generator_x86_64(Generator):
         if isinstance(expr.op, token.Assign):
             assign = [  "movq     %rax, {0:d}(%rbp)".format(offset)]
         elif isinstance(expr.op, token.AssignAdd):
-            assign = [  "addq     %rax, {0:d}(%rbp)".format(offset)]
+            assign = [  "addq     %rax, {0:d}(%rbp)".format(offset),
+                        "movq     {0:d}(%rbp), %rax".format(offset)]
         elif isinstance(expr.op, token.AssignSub):
-            assign = [  "subq     %rax, {0:d}(%rbp)".format(offset)]
+            assign = [  "subq     %rax, {0:d}(%rbp)".format(offset),
+                        "movq     {0:d}(%rbp), %rax".format(offset)]
         elif isinstance(expr.op, token.AssignMult):
             assign = [  "imulq    {0:d}(%rbp)".format(offset),
                         "movq     %rax, {0:d}(%rbp)".format(offset)]
@@ -247,19 +249,27 @@ class Generator_x86_64(Generator):
                         "movq     {0:d}(%rbp), %rax".format(offset),
                         "movq     $0, %rdx",
                         "idivq    %rcx",
-                        "movq     %rdx, {0:d}(%rbp)".format(offset)]
+                        "movq     %rdx, {0:d}(%rbp)".format(offset),
+                        "movq     %rdx, %rax".format(offset)]
         elif isinstance(expr.op, token.AssignBShiftL):
             assign = [  "movq     %rax, %rcx",
-                        "shlq     %cl, {0:d}(%rbp)".format(offset)]
+                        "shlq     %cl, {0:d}(%rbp)".format(offset),
+                        "movq     {0:d}(%rbp), %rax".format(offset)]
         elif isinstance(expr.op, token.AssignBShiftR):
             assign = [  "movq     %rax, %rcx",
-                        "shrq     %cl, {0:d}(%rbp)".format(offset)]
+                        "shrq     %cl, {0:d}(%rbp)".format(offset),
+                        "movq     {0:d}(%rbp), %rax".format(offset)]
         elif isinstance(expr.op, token.AssignBAnd):
-            assign = [  "andq     %rax, {0:d}(%rbp)".format(offset)]
+            assign = [  "andq     %rax, {0:d}(%rbp)".format(offset),
+                        "movq     {0:d}(%rbp), %rax".format(offset)]
         elif isinstance(expr.op, token.AssignBOr):
-            assign = [  "orq      %rax, {0:d}(%rbp)".format(offset)]
+            assign = [  "orq      %rax, {0:d}(%rbp)".format(offset),
+                        "movq     {0:d}(%rbp), %rax".format(offset)]
         elif isinstance(expr.op, token.AssignBXor):
-            assign = [  "xorq     %rax, {0:d}(%rbp)".format(offset)]
+            assign = [  "xorq     %rax, {0:d}(%rbp)".format(offset),
+                        "movq     {0:d}(%rbp), %rax".format(offset)]
+        else:
+            raise UnknownExpressionError(expr)
         code = calc + assign
         return code
 
