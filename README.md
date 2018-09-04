@@ -17,7 +17,7 @@ Currently works for a small subset of C:
     - Variable references
     - Unary operations: - ! ~
     - Binary operations: + - * / % == != < <= > >= && || & | ^ << >>
-    - Variable assignment: = += -= *= /= %= <<= >>= &= |= ^=
+    - Variable assignment: = += -= \*= /= %= <<= >>= &= |= ^=
     - Pre/post increment and decrement: ++ --
     - Conditional Expressions (Ternary Operator): a ? b : c
 
