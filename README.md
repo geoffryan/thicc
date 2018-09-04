@@ -15,11 +15,11 @@ Currently works for a small subset of C:
 * Expressions
     - Integer constants
     - Variable references
-    - Unary operations: - ! ~
-    - Binary operations: + - * / % == != < <= > >= && || & | ^ << >>
-    - Variable assignment: = += -= \*= /= %= <<= >>= &= |= ^=
-    - Pre/post increment and decrement: ++ --
-    - Conditional Expressions (Ternary Operator): a ? b : c
+    - Unary operations: `-` `!` `~`
+    - Binary operations: `+` `-` `*` `/` `%` `==` `!=` `<` `<=` `>` `>=` `&&` `||` `&` `|` `^` `<<` `>>`
+    - Variable assignment: `=` `+=` `-=` `*=` `/=` `%=` `<<=` `>>=` `&=` `|=` `^=`
+    - Pre/post increment and decrement: `++` `--`
+    - Conditional Expressions (Ternary Operator): `a ? b : c`
 
 They cannot yet print their output!  To check a program has correctly compiled, check the return code with `$?`:
 ```bash
