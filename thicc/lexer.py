@@ -60,8 +60,8 @@ class Lexer():
                     "^=":token.AssignBXor,
                     "++":token.Increment,
                     "--":token.Decrement,
-                    ":":token.TernaryA,
-                    "?":token.TernaryB}
+                    "?":token.QuestionMark,
+                    ":":token.Colon}
         self.keywords = {'int':token.Int,
                         'return':token.Return,
                         'if':token.If,

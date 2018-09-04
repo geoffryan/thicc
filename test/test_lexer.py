@@ -56,8 +56,8 @@ class TestLexer(unittest.TestCase):
         self.compareSingleToken('&&', token.And)
         self.compareSingleToken('||', token.Or)
         self.compareSingleToken('=', token.Assign)
-        self.compareSingleToken(':', token.TernaryA)
-        self.compareSingleToken('?', token.TernaryB)
+        self.compareSingleToken('?', token.QuestionMark)
+        self.compareSingleToken(':', token.Colon)
 
     def test_keywork_single(self):
         self.compareSingleToken('return', token.Return)
@@ -149,7 +149,7 @@ class TestLexer(unittest.TestCase):
         self.compareMultiToken(txt, cls, val)
         
         txt = "int x = 34;"
-        cls = [token.IntK, token.Identifier, token.Assign, token.IntC,
+        cls = [token.Int, token.Identifier, token.Assign, token.IntC,
                 token.Semicolon]
         val = ["", "x", "", "34", ""]
         self.compareMultiToken(txt, cls, val)
@@ -268,17 +268,17 @@ class TestLexer(unittest.TestCase):
         self.compareMultiToken(txt, cls, val)
         txt = "return;"
         val = ["", ""]
-        cls = [token.ReturnK, token.Semicolon]
+        cls = [token.Return, token.Semicolon]
         self.compareMultiToken(txt, cls, val)
         txt = "\tint\t7"
         val = ["", "7"]
-        cls = [token.IntK, token.IntC]
+        cls = [token.Int, token.IntC]
         self.compareMultiToken(txt, cls, val)
         txt = "int func(int a)\n{\n\treturn -365;\n}\n"
         val = ["","func","","","a","","","","","365","",""]
-        cls = [token.IntK, token.Identifier, token.OpenParentheses,
-                token.IntK, token.Identifier, token.ClosedParentheses,
-                token.OpenBrace, token.ReturnK, token.Neg, token.IntC,
+        cls = [token.Int, token.Identifier, token.OpenParentheses,
+                token.Int, token.Identifier, token.ClosedParentheses,
+                token.OpenBrace, token.Return, token.Neg, token.IntC,
                 token.Semicolon, token.ClosedBrace]
         self.compareMultiToken(txt, cls, val)
 

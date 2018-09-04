@@ -18,7 +18,19 @@ class Expression(ASTNode):
         out = buf + "Expression"
         return out
 
-class Statement(ASTNode):
+class BlockItem(ASTNode):
+    pass
+
+class Declaration(BlockItem):
+    def __init__(self):
+        self.terminal = False
+
+    def __str__(self, level=0):
+        buf = level * "   "
+        out = buf + "Declaration"
+        return out
+
+class Statement(BlockItem):
     def __init__(self):
         self.terminal = False
 
@@ -140,6 +152,20 @@ class IncrementPostE(Expression):
         out += self.var.__str__(level=level+1)
         return out
 
+class ConditionalE(Expression):
+    def __init__(self, condExpr, trueExpr, falseExpr):
+        self.cond = condExpr
+        self.true = trueExpr
+        self.false = falseExpr
+    
+    def __str__(self, level=0):
+        buf = level * "   "
+        out = buf + "Expression(Conditional): " + '\n'
+        out += self.cond.__str__(level=level+1)
+        out += self.true.__str__(level=level+1)
+        out += self.false.__str__(level=level+1)
+        return out
+
 
 #
 # Statements
@@ -167,7 +193,25 @@ class ExpressionS(Statement):
         out += self.value.__str__(level=level+1)
         return out
 
-class DeclareS(Statement):
+class ConditionalS(Statement):
+    def __init__(self, condExpr, ifStmnt, elseStmnt=None):
+        self.cond = condExpr
+        self.ifS = ifStmnt
+        self.elseS = elseStmnt
+
+    def __str__(self, level=0):
+        buf = level * "   "
+        out = buf + "Statement(Conditional):"+'\n'
+        out += self.ifS.__str__(level=level+1)
+        if elseS is not None:
+            out += self.elseS.__str__(level=level+1)
+        return out
+
+#
+# Declarations
+#
+
+class VariableD(Declaration):
     def __init__(self, idTok, expr=None):
         super().__init__()
         self.id = idTok
@@ -175,7 +219,7 @@ class DeclareS(Statement):
 
     def __str__(self, level=0):
         buf = level * "   "
-        out = buf + "Statement(Declare):" + self.id.val+'\n'
+        out = buf + "Declaration(Variable):" + self.id.val+'\n'
         if self.expr is not None:
             out += self.value.__str__(level=level+1)
         return out

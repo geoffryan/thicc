@@ -71,16 +71,33 @@ class TestThicc(unittest.TestCase):
         path = "test/data/stage_5/"
         self.runSampleTestsInvalid(path, "m64")
     
+    def test_stage6_valid_expression(self):
+        path = "test/data/stage_6/"
+        self.runSampleTestsValid(path, "m64", "expression/")
 
-    def runSampleTestsValid(self, rootpath, genType):
-        path = rootpath+"valid/"
+    def test_stage6_invalid_expression(self):
+        path = "test/data/stage_6/"
+        self.runSampleTestsInvalid(path, "m64", "expression/")
+    
+    def test_stage6_valid_statement(self):
+        path = "test/data/stage_6/"
+        self.runSampleTestsValid(path, "m64", "statement/")
+
+    def test_stage6_invalid_statement(self):
+        path = "test/data/stage_6/"
+        self.runSampleTestsInvalid(path, "m64", "statement/")
+    
+
+    def runSampleTestsValid(self, rootpath, genType, subdir=""):
+        path = rootpath+"valid/" + subdir
         files = os.listdir(path)
 
         for filename in files:
             if filename[-2:] != ".c":
                 continue
             #Expected Result
-            flags = ["-Wno-constant-logical-operand", "-Wno-unused-value"]
+            flags = ["-Wno-constant-logical-operand", "-Wno-unused-value",
+                        "-Wno-dangling-else"]
             if genType == "m32":
                 flags += ["-m32"]
             command = ["gcc"]+flags+[path+filename]
@@ -111,9 +128,9 @@ class TestThicc(unittest.TestCase):
 
             self.assertEqual(output0.returncode,output.returncode,msg=filename)
 
-    def runSampleTestsInvalid(self, rootpath, genType):
+    def runSampleTestsInvalid(self, rootpath, genType, subdir=""):
         # Valid
-        path = rootpath+"invalid/"
+        path = rootpath+"invalid/"+subdir
         files = os.listdir(path)
 
         for filename in files:

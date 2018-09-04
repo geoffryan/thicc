@@ -26,10 +26,37 @@ class InvalidASTHeadError(GeneratorError):
         self.expression = expr
         self.message = message
 
+class InvalidBlockItemError(GeneratorError):
+    def __init__(self, expr, message="Object is not block item."):
+        self.expression = expr
+        self.message = message
+
 class Generator():
 
     def __init__(self):
-        pass
+        self.counter = 0
+        self.indent = 4*" "
+        self.argCol = 8
+
+    def makeLabel(self):
+        lbl = "_lbl{0:d}".format(self.counter)
+        self.counter += 1 
+        return lbl
+
+    def label(self, lbl):
+        line = lbl + ":"
+        return line
+
+    def instruct(self, instruction, arg1=None, arg2=None):
+
+        line = self.indent + instruction
+        if arg1 is not None:
+            space = (self.argCol - len(instruction)) * " "
+            line += space + arg1
+            if arg2 is not None:
+                line += ", " + arg2
+        return line
+
 
     def generate(self, ast):
         if(isinstance(ast, symbol.Program)):
@@ -56,11 +83,18 @@ class Generator():
         name = func.name.val
         head1 = [   ".globl _{0:s}".format(name)]
         head2 = [   "_{0:s}:".format(name)]
-        prologue = ["push     %rbp",
-                    "movq     %rsp, %rbp"]
+        prologue = [self.instruct("push", "%rbp"),
+                    self.instruct("movq", "%rsp", "%rbp")]
+        prologue = [self.instruct("push", "%rbp"),
+                    self.instruct("movq", "%rsp", "%rbp")]
         body = []
-        for stmnt in func.body:
-            body += self.generateStatement(stmnt, vmap)
+        for item in func.body:
+            if isinstance(item, symbol.Declaration):
+                body += self.generateDeclaration(item, vmap)
+            elif isinstance(item, symbol.Statement):
+                body += self.generateStatement(item, vmap)
+            else:
+                raise InvalidBlockItemError(item)
 
         if len(func.body) == 0\
                 or not isinstance(func.body[-1], symbol.ReturnS):
@@ -70,23 +104,31 @@ class Generator():
         code = head1 + head2 + prologue + body
         return code
 
+    def generateDeclaration(self, declaration, vmap):
+        if isinstance(declaration, symbol.VariableD):
+            if declaration.expr is not None:
+                init = self.generateExpression(declaration.expr, vmap)
+            else:
+                init = [self.instruct("movq","$0","%rax")]
+            declare  = [self.instruct("push","%rax")]
+            vmap.add(declaration.id)
+            code = init+declare
+        else:
+            raise UnknownDeclarationError(declaration)
+
+        return code
+
     def generateStatement(self, statement, vmap):
         if isinstance(statement, symbol.ReturnS):
             setValue = self.generateExpression(statement.value, vmap)
-            epilogue = [    "movq     %rbp, %rsp",
-                            "pop      %rbp"]
-            returnLine = ["ret"]
+            epilogue = [self.instruct("movq","%rbp","%rsp"),
+                        self.instruct("pop","%rbp")]
+            returnLine = [self.instruct("ret")]
             code = setValue + epilogue + returnLine
-        elif isinstance(statement, symbol.DeclareS):
-            if statement.expr is not None:
-                init = self.generateExpression(statement.expr, vmap)
-            else:
-                init = [    "movq     $0, %rax"]
-            declare  = [    "push     %rax"]
-            vmap.add(statement.id)
-            code = init+declare
         elif isinstance(statement, symbol.ExpressionS):
             code = self.generateExpression(statement.expr, vmap)
+        elif isinstance(statement, symbol.ConditionalS):
+            code = self.conditionalStmntCode(statement, vmap)
         else:
             raise UnknownStatementError(statement)
 
@@ -107,6 +149,8 @@ class Generator():
             code = self.binaryOpCode(expr, vmap)
         elif isinstance(expr, symbol.AssignE):
             code = self.assignOpCode(expr, vmap)
+        elif isinstance(expr, symbol.ConditionalE):
+            code = self.conditionalExprCode(expr, vmap)
         else:
             raise UnknownExpressionError(expr)
 
@@ -127,21 +171,23 @@ class Generator_x86_64(Generator):
 
     def constExprCode(self, expr):
         val = expr.value.val
-        code = ["movl     ${0:s}, %eax".format(val)]
+        code = [self.instruct("movl","${0:s}".format(val),"%eax")]
         return code
 
     def varRefCode(self, expr, vmap):
         offset = vmap.getOffset(expr.id)
-        code = ["movq     {0:d}(%rbp), %rax".format(offset)]
+        var = "{0:d}(%rbp)".format(offset)
+        code = [self.instruct("movq",var,"%rax")]
         return code
 
     def incrementPostCode(self, expr, vmap):
         refCode = self.varRefCode(expr.var, vmap)
         offset = vmap.getOffset(expr.var.id)
+        var = "{0:d}(%rbp)".format(offset)
         if isinstance(expr.op, token.Increment):
-            incCode = [ "incq   {0:d}(%rbp)".format(offset)]
+            incCode = [self.instruct("incq",var)]
         elif isinstance(expr.op, token.Decrement):
-            incCode = [ "decq   {0:d}(%rbp)".format(offset)]
+            incCode = [self.instruct("decq",var)]
         else:
             raise UnknownIncrementOperatorError(expr.op)
         code = refCode + incCode
@@ -149,10 +195,11 @@ class Generator_x86_64(Generator):
 
     def incrementPreCode(self, expr, vmap):
         offset = vmap.getOffset(expr.var.id)
+        var = "{0:d}(%rbp)".format(offset)
         if isinstance(expr.op, token.Increment):
-            incCode = [ "incq   {0:d}(%rbp)".format(offset)]
+            incCode = [self.instruct("incq",var)]
         elif isinstance(expr.op, token.Decrement):
-            incCode = [ "decq   {0:d}(%rbp)".format(offset)]
+            incCode = [self.instruct("decq",var)]
         else:
             raise UnknownIncrementOperatorError(expr.op)
         refCode = self.varRefCode(expr.var, vmap)
@@ -165,13 +212,13 @@ class Generator_x86_64(Generator):
         codeSet = self.generateExpression(expr.expr, vmap)
         op = expr.op
         if isinstance(op, token.Not):
-            codeOp = [  "cmpl     $0, %eax",
-                        "movl     $0, %eax",
-                        "sete     %al"]
+            codeOp = [  self.instruct("cmpl", "$0", "%eax"),
+                        self.instruct("movl", "$0", "%eax"),
+                        self.instruct("sete", "%al")]
         elif isinstance(op, token.Neg):
-            codeOp =  [ "neg      %eax"]
+            codeOp =  [ self.instruct("neg", "%eax")]
         elif isinstance(op, token.Complement):
-            codeOp =  [ "not      %eax"]
+            codeOp =  [ self.instruct("not", "%eax")]
         else:
             raise UnknownExpressionError(expr)
         code = codeSet+codeOp
@@ -185,73 +232,73 @@ class Generator_x86_64(Generator):
         e2 = expr.expr2
 
         codeSet1 = self.generateExpression(e1, vmap)
-        codePush1 = [   "pushq    %rax"]
+        codePush1 = [   self.instruct("pushq", "%rax")]
         codeSet2 = self.generateExpression(e2, vmap)
-        codeSet2 += [   "movl     %eax, %ecx"]
-        codePop1  = [   "popq     %rax"]
+        codeSet2 += [   self.instruct("movl", "%eax", "%ecx")]
+        codePop1  = [   self.instruct("popq", "%rax")]
 
         if isinstance(op, token.Add):
-            codeOp = [  "addl     %ecx, %eax"]
+            codeOp = [  self.instruct("addl", "%ecx", "%eax")]
         elif isinstance(op, token.Neg):
-            codeOp = [  "subl     %ecx, %eax"]
+            codeOp = [  self.instruct("subl", "%ecx", "%eax")]
         elif isinstance(op, token.Mult):
-            codeOp = [  "imull    %ecx, %eax"]
+            codeOp = [  self.instruct("imull", "%ecx", "%eax")]
         elif isinstance(op, token.Div):
             #zero out rdx and divide
-            codeOp = [  "movl     $0, %edx",
-                        "idivl    %ecx"]
+            codeOp = [  self.instruct("movl", "$0", "%edx"),
+                        self.instruct("idivl", "%ecx")]
         elif isinstance(op, token.Mod):
             #zero out rdx and divide
-            codeOp =  [ "movl     $0, %edx",
-                        "idivl    %ecx",
-                        "movl     %edx, %eax"]
+            codeOp =  [ self.instruct("movl", "$0", "%edx"),
+                        self.instruct("idivl", "%ecx"),
+                        self.instruct("movl", "%edx", "%eax")]
         elif isinstance(op, token.BitShiftL):
-            codeOp =  [ "shll     %cl, %eax"]
+            codeOp =  [ self.instruct("shll", "%cl", "%eax")]
         elif isinstance(op, token.BitShiftR):
-            codeOp =  [ "shrl     %cl, %eax"]
+            codeOp =  [ self.instruct("shrl", "%cl", "%eax")]
         elif isinstance(op, token.BitAnd):
-            codeOp =  [ "andl     %ecx, %eax"]
+            codeOp =  [ self.instruct("andl", "%ecx", "%eax")]
         elif isinstance(op, token.BitOr):
-            codeOp =  [ "orl      %ecx, %eax"]
+            codeOp =  [ self.instruct("orl", "%ecx", "%eax")]
         elif isinstance(op, token.BitXor):
-            codeOp =  [ "xorl     %ecx, %eax"]
+            codeOp =  [ self.instruct("xorl", "%ecx", "%eax")]
         elif isinstance(op, token.Equal):
-            codeOp =  [ "cmpl     %eax, %ecx",
-                        "movl     $0, %eax",
-                        "sete     %al"]
+            codeOp =  [ self.instruct("cmpl", "%eax", "%ecx"),
+                        self.instruct("movl", "$0", "%eax"),
+                        self.instruct("sete", "%al")]
         elif isinstance(op, token.NotEqual):
-            codeOp =  [ "cmpl     %eax, %ecx",
-                        "movl     $0, %eax",
-                        "setne    %al"]
+            codeOp =  [ self.instruct("cmpl", "%eax", "%ecx"),
+                        self.instruct("movl", "$0", "%eax"),
+                        self.instruct("setne", "%al")]
         elif isinstance(op, token.LessThan):
-            codeOp =  [ "cmpl     %ecx, %eax",
-                        "movl     $0, %eax",
-                        "sets     %al"]
+            codeOp =  [ self.instruct("cmpl", "%ecx", "%eax"),
+                        self.instruct("movl", "$0", "%eax"),
+                        self.instruct("sets", "%al")]
         elif isinstance(op, token.GreaterThan):
-            codeOp =  [ "cmpl     %eax, %ecx",
-                        "movl     $0, %eax",
-                        "sets     %al"]
+            codeOp =  [ self.instruct("cmpl", "%eax", "%ecx"),
+                        self.instruct("movl", "$0", "%eax"),
+                        self.instruct("sets", "%al")]
         elif isinstance(op, token.LessThanEqual):
-            codeOp =  [ "cmpl     %eax, %ecx",
-                        "movl     $0, %eax",
-                        "setns    %al"]
+            codeOp =  [ self.instruct("cmpl", "%eax", "%ecx"),
+                        self.instruct("movl", "$0", "%eax"),
+                        self.instruct("setns", "%al")]
         elif isinstance(op, token.GreaterThanEqual):
-            codeOp =  [ "cmpl     %ecx, %eax",
-                        "movl     $0, %eax",
-                        "setns    %al"]
+            codeOp =  [ self.instruct("cmpl", "%ecx", "%eax"),
+                        self.instruct("movl", "$0", "%eax"),
+                        self.instruct("setns", "%al")]
         elif isinstance(op, token.And):
-            codeOp =  [ "cmpl     $0, %eax",
-                        "movl     $0, %eax",
-                        "setne    %al",
-                        "cmpl     $0, %ecx",
-                        "movl     $0, %ecx",
-                        "setne    %cl",
-                        "andl     %ecx, %eax"]
+            codeOp =  [ self.instruct("cmpl", "$0", "%eax"),
+                        self.instruct("movl", "$0", "%eax"),
+                        self.instruct("setne", "%al"),
+                        self.instruct("cmpl", "$0", "%ecx"),
+                        self.instruct("movl", "$0", "%ecx"),
+                        self.instruct("setne", "%cl"),
+                        self.instruct("andl", "%ecx", "%eax")]
         elif isinstance(op, token.Or):
-            codeOp =  [ "orl      %ecx, %eax",
-                        "cmpl     $0, %eax",
-                        "movl     $0, %eax",
-                        "setne    %al"]
+            codeOp =  [ self.instruct("orl", "%ecx", "%eax"),
+                        self.instruct("cmpl", "$0", "%eax"),
+                        self.instruct("movl", "$0", "%eax"),
+                        self.instruct("setne", "%al")]
         else:
             raise UnknownExpressionError(expr)
 
@@ -261,51 +308,104 @@ class Generator_x86_64(Generator):
     def assignOpCode(self, expr, vmap):
         offset = vmap.getOffset(expr.id)
         calc = self.generateExpression(expr.expr, vmap)
+        var = "{0:d}(%rbp)".format(offset)
         if isinstance(expr.op, token.Assign):
-            assign = [  "movq     %rax, {0:d}(%rbp)".format(offset)]
+            assign = [  self.instruct("movq", "%rax", var)]
         elif isinstance(expr.op, token.AssignAdd):
-            assign = [  "addq     %rax, {0:d}(%rbp)".format(offset),
-                        "movq     {0:d}(%rbp), %rax".format(offset)]
+            assign = [  self.instruct("addq", "%rax", var),
+                        self.instruct("movq", var, "%rax")]
         elif isinstance(expr.op, token.AssignSub):
-            assign = [  "subq     %rax, {0:d}(%rbp)".format(offset),
-                        "movq     {0:d}(%rbp), %rax".format(offset)]
+            assign = [  self.instruct("subq", "%rax", var),
+                        self.instruct("movq", var, "%rax")]
         elif isinstance(expr.op, token.AssignMult):
-            assign = [  "imulq    {0:d}(%rbp)".format(offset),
-                        "movq     %rax, {0:d}(%rbp)".format(offset)]
+            assign = [  self.instruct("imulq",var),
+                        self.instruct("movq", "%rax", var)]
         elif isinstance(expr.op, token.AssignDiv):
-            assign = [  "movq     %rax, %rcx",
-                        "movq     {0:d}(%rbp), %rax".format(offset),
-                        "movq     $0, %rdx",
-                        "idivq    %rcx",
-                        "movq     %rax, {0:d}(%rbp)".format(offset)]
+            assign = [  self.instruct("movq", "%rax", "%rcx"),
+                        self.instruct("movq", var, "%rax"),
+                        self.instruct("movq", "$0", "%rdx"),
+                        self.instruct("idivq", "%rcx"),
+                        self.instruct("movq", "%rax", var)]
         elif isinstance(expr.op, token.AssignMod):
-            assign = [  "movq     %rax, %rcx",
-                        "movq     {0:d}(%rbp), %rax".format(offset),
-                        "movq     $0, %rdx",
-                        "idivq    %rcx",
-                        "movq     %rdx, {0:d}(%rbp)".format(offset),
-                        "movq     %rdx, %rax".format(offset)]
+            assign = [  self.instruct("movq", "%rax", "%rcx"),
+                        self.instruct("movq", var, "%rax"),
+                        self.instruct("movq", "$0", "%rdx"),
+                        self.instruct("idivq", "%rcx"),
+                        self.instruct("movq", "%rdx", var),
+                        self.instruct("movq", "%rdx", "%rax")]
         elif isinstance(expr.op, token.AssignBShiftL):
-            assign = [  "movq     %rax, %rcx",
-                        "shlq     %cl, {0:d}(%rbp)".format(offset),
-                        "movq     {0:d}(%rbp), %rax".format(offset)]
+            assign = [  self.instruct("movq", "%rax", "%rcx"),
+                        self.instruct("shlq", "%cl", var),
+                        self.instruct("movq", var, "%rax")]
         elif isinstance(expr.op, token.AssignBShiftR):
-            assign = [  "movq     %rax, %rcx",
-                        "shrq     %cl, {0:d}(%rbp)".format(offset),
-                        "movq     {0:d}(%rbp), %rax".format(offset)]
+            assign = [  self.instruct("movq", "%rax", "%rcx"),
+                        self.instruct("shrq", "%cl", var),
+                        self.instruct("movq", var, "%rax")]
         elif isinstance(expr.op, token.AssignBAnd):
-            assign = [  "andq     %rax, {0:d}(%rbp)".format(offset),
-                        "movq     {0:d}(%rbp), %rax".format(offset)]
+            assign = [  self.instruct("andq", "%rax", var),
+                        self.instruct("movq", var, "%rax")]
         elif isinstance(expr.op, token.AssignBOr):
-            assign = [  "orq      %rax, {0:d}(%rbp)".format(offset),
-                        "movq     {0:d}(%rbp), %rax".format(offset)]
+            assign = [  self.instruct("orq", "%rax", var),
+                        self.instruct("movq", var, "%rax")]
         elif isinstance(expr.op, token.AssignBXor):
-            assign = [  "xorq     %rax, {0:d}(%rbp)".format(offset),
-                        "movq     {0:d}(%rbp), %rax".format(offset)]
+            assign = [  self.instruct("xorq", "%rax", var),
+                        self.instruct("movq", var, "%rax")]
         else:
             raise UnknownExpressionError(expr)
         code = calc + assign
         return code
+
+    def conditionalExprCode(self, expr, vmap):
+
+        evalCond = self.generateExpression(expr.cond, vmap)
+        evalTrue = self.generateExpression(expr.true, vmap)
+        evalFalse = self.generateExpression(expr.false, vmap)
+        falseLabel = self.makeLabel()
+        endLabel = self.makeLabel()
+
+        checkCond = [   self.instruct("cmpq", "$0", "%rax"),
+                        self.instruct("je", falseLabel)]
+
+        jmpEnd = [  self.instruct("jmp", endLabel)]
+        lblFalse = [    self.label(falseLabel)]
+        lblEnd = [    self.label(endLabel)]
+
+        code = evalCond + checkCond + evalTrue + jmpEnd\
+                + lblFalse + evalFalse + lblEnd
+
+        return code
+
+    def conditionalStmntCode(self, stmnt, vmap):
+
+        evalCond = self.generateExpression(stmnt.cond, vmap)
+        evalTrue = self.generateStatement(stmnt.ifS, vmap)
+        
+        if stmnt.elseS is not None:
+            evalFalse = self.generateStatement(stmnt.elseS, vmap)
+            falseLabel = self.makeLabel()
+            endLabel = self.makeLabel()
+
+            checkCond = [   self.instruct("cmpq", "$0", "%rax"),
+                            self.instruct("je", falseLabel)]
+
+            jmpEnd = [  self.instruct("jmp", endLabel)]
+            lblFalse = [    self.label(falseLabel)]
+            lblEnd = [    self.label(endLabel)]
+
+            code = evalCond + checkCond + evalTrue + jmpEnd\
+                    + lblFalse + evalFalse + lblEnd
+        else:
+            endLabel = self.makeLabel()
+
+            checkCond = [   self.instruct("cmpq", "$0", "%rax"),
+                            self.instruct("je", endLabel)]
+
+            lblEnd = [    self.label(endLabel)]
+
+            code = evalCond + checkCond + evalTrue + lblEnd
+
+        return code
+        
 
 """
 class Generator_x86(Generator):
@@ -320,13 +420,13 @@ class Generator_x86(Generator):
         codeSet = self.generateExpression(expr.expr)
         op = expr.op
         if isinstance(op, token.Not):
-            codeOp  = [ "cmpl     $0, %eax",
-                        "movl     $0, %eax",
-                        "sete     %al"]
+            codeOp  = [ self.instruct("cmpl", "$0", "%eax"),
+                        self.instruct("movl", "$0", "%eax"),
+                        self.instruct("sete", "%al")]
         elif isinstance(op, token.Neg):
-            codeOp =  [ "neg      %eax"]
+            codeOp =  [ self.instruct("neg", "%eax")]
         elif isinstance(op, token.Complement):
-            codeOp =  [ "not      %eax"]
+            codeOp =  [ self.instruct("not", "%eax")]
         else:
             raise UnknownExpressionError(expr)
         code = codeSet+codeOp
@@ -340,26 +440,26 @@ class Generator_x86(Generator):
         e2 = expr.expr2
 
         codeSet1 = self.generateExpression(e1)
-        codePush1 = [   "pushl    %eax"]
+        codePush1 = [   self.instruct("pushl", "%eax")]
         codeSet2 = self.generateExpression(e2)
-        codePop1  = [   "popl     %ecx"]
+        codePop1  = [   self.instruct("popl", "%ecx")]
 
         if isinstance(op, token.Add):
-            codeOp = [  "addl     %ecx, %eax"]
+            codeOp = [  self.instruct("addl", "%ecx", "%eax")]
         elif isinstance(op, token.Neg):
-            codeOp = [  "subl     %eax, %ecx",
-                        "movl     %ecx, %eax"]
+            codeOp = [  self.instruct("subl", "%eax", "%ecx"),
+                        self.instruct("movl", "%ecx", "%eax")]
         elif isinstance(op, token.Mult):
-            codeOp = [  "imull    %ecx, %eax"]
+            codeOp = [  self.instruct("imull", "%ecx", "%eax")]
         elif isinstance(op, token.Div):
             #swap e2 and e1 so e1 is in eax
-            codeOp  = [ "movl     %ecx, %edx",
-                        "movl     %eax, %ecx",
-                        "movl     %edx, %eax",
+            codeOp  = [ self.instruct("movl", "%ecx", "%edx"),
+                        self.instruct("movl", "%eax", "%ecx"),
+                        self.instruct("movl", "%edx", "%eax"),
             #zero out rdx
-                        "movl     $0, %edx",
+                        self.instruct("movl", "$0", "%edx"),
             #divide!
-                        "idivl    %ecx"]
+                        self.instruct("idivl", "%ecx")]
         else:
             raise UnknownExpressionError(expr)
 

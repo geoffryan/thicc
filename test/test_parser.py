@@ -12,7 +12,7 @@ class TestParser(unittest.TestCase):
 
     def compareStatement(self, toks, ast0):
         parser = thicc.parser.Parser()
-        ast = parser.parseStatement(toks[::-1])
+        ast = parser.parseBlockItem(toks[::-1])
         self.assertEqual(ast, ast0)
 
     def compareFunction(self, toks, ast0):
@@ -313,15 +313,64 @@ class TestParser(unittest.TestCase):
 
         # int x;
         toks = [token.Int(), token.Identifier("x"), token.Semicolon()]
-        sym = symbol.DeclareS(token.Identifier("x"))
+        sym = symbol.VariableD(token.Identifier("x"))
         self.compareStatement(toks, sym)
 
         # int a = 33;
         toks = [token.Int(), token.Identifier("a"), token.Assign(),
                 token.IntC("33"), token.Semicolon()]
-        sym = symbol.DeclareS(token.Identifier("a"), 
+        sym = symbol.VariableD(token.Identifier("a"), 
                 symbol.ConstantE(token.IntC("33")))
         self.compareStatement(toks, sym)
+
+    def test_conditional(self):
+        toks = [token.If(), token.OpenParentheses(), token.Identifier("a"), 
+                token.ClosedParentheses(), token.Return(), token.IntC("5"),
+                token.Semicolon()]
+        sym = symbol.ConditionalS(symbol.VarRefE(token.Identifier("a")),
+                symbol.ReturnS(symbol.ConstantE(token.IntC("5"))))
+        self.compareStatement(toks, sym)
+
+        toks = [token.If(), token.OpenParentheses(), token.Identifier("a"), 
+                token.ClosedParentheses(), token.Return(), token.IntC("5"),
+                token.Semicolon(), token.Else(), token.Return(), 
+                token.IntC("4"), token.Semicolon()]
+        sym = symbol.ConditionalS(symbol.VarRefE(token.Identifier("a")),
+                symbol.ReturnS(symbol.ConstantE(token.IntC("5"))),
+                symbol.ReturnS(symbol.ConstantE(token.IntC("4"))))
+        self.compareStatement(toks, sym)
+
+        toks = [token.Identifier("a"), token.QuestionMark(), 
+                token.Identifier("b"), token.Colon(), token.Identifier("c")]
+        sym = symbol.ConditionalE(symbol.VarRefE(token.Identifier("a")),
+                                    symbol.VarRefE(token.Identifier("b")),
+                                    symbol.VarRefE(token.Identifier("c")))
+        self.compareExpression(toks, sym)
+
+        ta = token.Identifier("a")
+        tb = token.Identifier("b")
+        tc = token.Identifier("c")
+        td = token.Identifier("d")
+        te = token.Identifier("e")
+        tf = token.Identifier("f")
+        tg = token.Identifier("g")
+        sa = symbol.VarRefE(ta)
+        sb = symbol.VarRefE(tb)
+        sc = symbol.VarRefE(tc)
+        sd = symbol.VarRefE(td)
+        se = symbol.VarRefE(te)
+        sf = symbol.VarRefE(tf)
+        sg = symbol.VarRefE(tg)
+
+        toks = [ta, token.Or(), tb, token.QuestionMark(), 
+                tc, token.AssignAdd(), td, token.Colon(),
+                te, token.QuestionMark(), tf, token.Colon(), tg]
+        sym = symbol.ConditionalE(
+                symbol.BinaryOpE(token.Or(), sa, sb),
+                symbol.AssignE(sc.id, token.AssignAdd(), sd),
+                symbol.ConditionalE(se, sf, sg))
+        self.compareExpression(toks, sym)
+
 
 
     def test_statement(self):
@@ -355,7 +404,7 @@ class TestParser(unittest.TestCase):
         tok56 = token.IntC("56")
         tokb = token.Identifier("b")
         sym = symbol.Function(tokFoo, [
-            symbol.DeclareS(tokb, symbol.ConstantE(tok56)),
+            symbol.VariableD(tokb, symbol.ConstantE(tok56)),
             symbol.ReturnS(symbol.VarRefE(tokb))])
 
         self.compareFunction(toks, sym)

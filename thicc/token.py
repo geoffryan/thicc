@@ -38,13 +38,21 @@ class Punctuator(Token):
 # Keywords
 #
 
-class ReturnK(Keyword):
+class Return(Keyword):
     def __init__(self):
         self.val = 'return'
 
-class IntK(Keyword):
+class Int(Keyword):
     def __init__(self):
         self.val = 'int'
+
+class If(Keyword):
+    def __init__(self):
+        self.val = 'if'
+
+class Else(Keyword):
+    def __init__(self):
+        self.val = 'else'
 
 #
 # Constants
@@ -92,6 +100,9 @@ class UnaryOp(Operator):
     pass
 
 class BinaryOp(Operator):
+    pass
+
+class TernaryOp(Operator):
     pass
 
 class AssignmentOp(Operator):
@@ -241,3 +252,18 @@ class Or(BinaryOp):
     def __init__(self):
         self.val = '||'
 
+# Ternary Operator
+
+class TernaryA(TernaryOp):
+    pass
+
+class TernaryB(TernaryOp):
+    pass
+
+class QuestionMark(TernaryA):
+    def __init__(self):
+        self.val = '?'
+
+class Colon(TernaryB):
+    def __init__(self):
+        self.val = ':'

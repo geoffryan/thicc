@@ -11,12 +11,15 @@ Currently works for a small subset of C:
     - The `return` statement, which contains a single expression.
     - (int) Variable declarations (with optional initializations)
     - Expression evaluation
+    - Conditional statement (if/else), each branch containing only a single statement.
 * Expressions
     - Integer constants
     - Variable references
     - Unary operations: - ! ~
     - Binary operations: + - * / % == != < <= > >= && || & | ^ << >>
-    - Variable assignment: =
+    - Variable assignment: = += -= *= /= %= <<= >>= &= |= ^=
+    - Pre/post increment and decrement: ++ --
+    - Conditional Expressions (Ternary Operator): a ? b : c
 
 They cannot yet print their output!  To check a program has correctly compiled, check the return code with `$?`:
 ```bash
