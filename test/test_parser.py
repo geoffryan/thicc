@@ -166,6 +166,8 @@ class TestParser(unittest.TestCase):
         s5 = symbol.ConstantE(t5)
         t10 = token.IntC("10")
         s10 = symbol.ConstantE(t10)
+        ta = token.Identifier("a")
+        sa = symbol.VarRefE(ta)
         toks = [t5, token.Or(), t10, token.And(), t5, token.Equal(), t10,
                 token.GreaterThanEqual(), t5, token.BitShiftL(), t10,
                 token.Add(), t5, token.Mult(), token.Neg(), t10]
@@ -193,6 +195,31 @@ class TestParser(unittest.TestCase):
                 symbol.UnaryOpE(token.Neg(), s5), s10), s5), s10), s5), s10),
                     s5), s10)
         self.compareExpression(toks, sym)
+
+        # 5 - 10 + 5
+        toks = [t5, token.Neg(), t10, token.Add(), t5]
+        sym = symbol.BinaryOpE(token.Add(), 
+                symbol.BinaryOpE(token.Neg(), s5, s10), s5)
+        self.compareExpression(toks, sym)
+
+        # 5 + ++a
+        toks = [t5, token.Add(), token.Increment(), ta]
+        sym = symbol.BinaryOpE(token.Add(),
+                s5, symbol.IncrementPreE(token.Increment(), sa))
+        self.compareExpression(toks, sym)
+
+        # 5 + a++
+        toks = [t5, token.Add(), ta, token.Increment()]
+        sym = symbol.BinaryOpE(token.Add(),
+                s5, symbol.IncrementPostE(token.Increment(), sa))
+        self.compareExpression(toks, sym)
+
+        # a-- - 5
+        toks = [ta, token.Decrement(), token.Neg(), t5]
+        sym = symbol.BinaryOpE(token.Neg(),
+                symbol.IncrementPostE(token.Decrement(), sa), s5)
+        self.compareExpression(toks, sym)
+
 
     def test_assignment(self):
 
@@ -266,6 +293,18 @@ class TestParser(unittest.TestCase):
         sym = symbol.AssignE(token.Identifier("a"), token.AssignBXor(), 
                                 symbol.ConstantE(token.IntC("42")))
         self.compareExpression(toks, sym)
+
+        # a++
+        toks = [token.Identifier("a"), token.Increment()]
+        sym = symbol.IncrementPostE(token.Increment(),
+                        symbol.VarRefE(token.Identifier("a")))
+        self.compareExpression(toks, sym)
+    
+        # --a
+        toks = [token.Decrement(), token.Identifier("a")]
+        sym = symbol.IncrementPreE(token.Decrement(),
+                        symbol.VarRefE(token.Identifier("a")))
+        self.compareExpression(toks, sym)
     
         # y;
         toks = [token.Identifier("y"), token.Semicolon()]
@@ -273,12 +312,12 @@ class TestParser(unittest.TestCase):
         self.compareStatement(toks, sym)
 
         # int x;
-        toks = [token.IntK(), token.Identifier("x"), token.Semicolon()]
+        toks = [token.Int(), token.Identifier("x"), token.Semicolon()]
         sym = symbol.DeclareS(token.Identifier("x"))
         self.compareStatement(toks, sym)
 
         # int a = 33;
-        toks = [token.IntK(), token.Identifier("a"), token.Assign(),
+        toks = [token.Int(), token.Identifier("a"), token.Assign(),
                 token.IntC("33"), token.Semicolon()]
         sym = symbol.DeclareS(token.Identifier("a"), 
                 symbol.ConstantE(token.IntC("33")))
@@ -287,15 +326,15 @@ class TestParser(unittest.TestCase):
 
     def test_statement(self):
 
-        toks = [token.ReturnK(), token.IntC("36"), token.Semicolon()]
+        toks = [token.Return(), token.IntC("36"), token.Semicolon()]
         sym36 = symbol.ConstantE(token.IntC("36"))
         sym = symbol.ReturnS(sym36)
         self.compareStatement(toks, sym)
 
     def test_function(self):
 
-        toks = [token.IntK(), token.Identifier("foo"), token.OpenParentheses(),
-                token.ClosedParentheses(), token.OpenBrace(), token.ReturnK(),
+        toks = [token.Int(), token.Identifier("foo"), token.OpenParentheses(),
+                token.ClosedParentheses(), token.OpenBrace(), token.Return(),
                 token.IntC("88"), token.Semicolon(), token.ClosedBrace()]
         tokFoo = token.Identifier("foo")
         tok88 = token.IntC("88")
@@ -304,13 +343,13 @@ class TestParser(unittest.TestCase):
 
         self.compareFunction(toks, sym)
 
-        toks = [token.IntK(), token.Identifier("foo"), token.OpenParentheses(),
+        toks = [token.Int(), token.Identifier("foo"), token.OpenParentheses(),
                 token.ClosedParentheses(), token.OpenBrace(), 
                 
-                token.IntK(), token.Identifier("b"), token.Assign(),
+                token.Int(), token.Identifier("b"), token.Assign(),
                 token.IntC("56"),token.Semicolon(),
                 
-                token.ReturnK(), token.Identifier("b"), token.Semicolon(), 
+                token.Return(), token.Identifier("b"), token.Semicolon(), 
                 token.ClosedBrace()]
         tokFoo = token.Identifier("foo")
         tok56 = token.IntC("56")
@@ -323,8 +362,8 @@ class TestParser(unittest.TestCase):
 
     def test_program(self):
 
-        toks = [token.IntK(), token.Identifier("foo"), token.OpenParentheses(),
-                token.ClosedParentheses(), token.OpenBrace(), token.ReturnK(),
+        toks = [token.Int(), token.Identifier("foo"), token.OpenParentheses(),
+                token.ClosedParentheses(), token.OpenBrace(), token.Return(),
                 token.IntC("88"), token.Semicolon(), token.ClosedBrace()]
         tokFoo = token.Identifier("foo")
         tok88 = token.IntC("88")

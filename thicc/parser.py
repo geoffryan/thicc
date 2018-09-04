@@ -30,6 +30,11 @@ class UnmatchedParenthesesError(ParseError):
         self.expression = expr
         self.message = message
 
+class InvalidExpressionError(ParseError):
+    def __init__(self, expr, message="Invalid Variable ref"):
+        self.expression = expr
+        self.message = message
+
 class Parser():
 
     def __init__(self):
@@ -197,11 +202,32 @@ class Parser():
                 raise UnmatchedParthenthesesError(tok.val)
             return fac
         elif isinstance(tok, token.UnaryOp):
-            fac = self.parseFactor(tokens)
-            return symbol.UnaryOpE(tok, fac)
+            if isinstance(tok, token.IncrementOp):
+                var = self.parseVariable(tokens)
+                return symbol.IncrementPreE(tok, var)
+            else:
+                fac = self.parseFactor(tokens)
+                return symbol.UnaryOpE(tok, fac)
         elif isinstance(tok, token.Constant):
             return symbol.ConstantE(tok)
         elif isinstance(tok, token.Identifier):
-            return symbol.VarRefE(tok)
+            tokens.append(tok)
+            var = self.parseVariable(tokens)
+            if len(tokens) > 0:
+                tok = tokens.pop()
+                if isinstance(tok, token.IncrementOp):
+                    return symbol.IncrementPostE(tok, var)
+                else:
+                    tokens.append(tok)
+            return var
         raise InvalidExpressionError(tok.val)
+
+    def parseVariable(self, tokens):
+        tok = tokens.pop()
+        if isinstance(tok, token.Identifier):
+            expr = symbol.VarRefE(tok)
+        else:
+            raise InvalidVariableRefError(tok.val)
+        return expr
+
 

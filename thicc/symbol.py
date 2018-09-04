@@ -116,6 +116,30 @@ class UnaryOpE(Expression):
         out += self.expr.__str__(level=level+1)
         return out
 
+class IncrementPreE(Expression):
+    def __init__(self, opTok, var):
+        super().__init__()
+        self.op = opTok
+        self.var = var
+    
+    def __str__(self, level=0):
+        buf = level * "   "
+        out = buf + "Expression(IncrementPre): " + self.op.val + '\n'
+        out += self.var.__str__(level=level+1)
+        return out
+
+class IncrementPostE(Expression):
+    def __init__(self, opTok, var):
+        super().__init__()
+        self.op = opTok
+        self.var = var
+    
+    def __str__(self, level=0):
+        buf = level * "   "
+        out = buf + "Expression(IncrementPost): " + self.op.val + '\n'
+        out += self.var.__str__(level=level+1)
+        return out
+
 
 #
 # Statements

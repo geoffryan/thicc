@@ -16,6 +16,11 @@ class UnknownExpressionError(GeneratorError):
         self.expression = expr
         self.message = message
 
+class UnknownIncrementOperatorError(GeneratorError):
+    def __init__(self, expr, message="Unknown type of increment operator"):
+        self.expression = expr
+        self.message = message
+
 class InvalidASTHeadError(GeneratorError):
     def __init__(self, expr, message="Cannot generate code from AST Head"):
         self.expression = expr
@@ -92,6 +97,10 @@ class Generator():
             code = self.constExprCode(expr)
         elif isinstance(expr, symbol.VarRefE):
             code = self.varRefCode(expr, vmap)
+        elif isinstance(expr, symbol.IncrementPostE):
+            code = self.incrementPostCode(expr, vmap)
+        elif isinstance(expr, symbol.IncrementPreE):
+            code = self.incrementPreCode(expr, vmap)
         elif isinstance(expr, symbol.UnaryOpE):
             code = self.unaryOpCode(expr, vmap)
         elif isinstance(expr, symbol.BinaryOpE):
@@ -125,6 +134,31 @@ class Generator_x86_64(Generator):
         offset = vmap.getOffset(expr.id)
         code = ["movq     {0:d}(%rbp), %rax".format(offset)]
         return code
+
+    def incrementPostCode(self, expr, vmap):
+        refCode = self.varRefCode(expr.var, vmap)
+        offset = vmap.getOffset(expr.var.id)
+        if isinstance(expr.op, token.Increment):
+            incCode = [ "incq   {0:d}(%rbp)".format(offset)]
+        elif isinstance(expr.op, token.Decrement):
+            incCode = [ "decq   {0:d}(%rbp)".format(offset)]
+        else:
+            raise UnknownIncrementOperatorError(expr.op)
+        code = refCode + incCode
+        return code
+
+    def incrementPreCode(self, expr, vmap):
+        offset = vmap.getOffset(expr.var.id)
+        if isinstance(expr.op, token.Increment):
+            incCode = [ "incq   {0:d}(%rbp)".format(offset)]
+        elif isinstance(expr.op, token.Decrement):
+            incCode = [ "decq   {0:d}(%rbp)".format(offset)]
+        else:
+            raise UnknownIncrementOperatorError(expr.op)
+        refCode = self.varRefCode(expr.var, vmap)
+        code = incCode + refCode
+        return code
+
 
     def unaryOpCode(self, expr, vmap):
 

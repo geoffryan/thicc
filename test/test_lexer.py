@@ -56,10 +56,14 @@ class TestLexer(unittest.TestCase):
         self.compareSingleToken('&&', token.And)
         self.compareSingleToken('||', token.Or)
         self.compareSingleToken('=', token.Assign)
+        self.compareSingleToken(':', token.TernaryA)
+        self.compareSingleToken('?', token.TernaryB)
 
     def test_keywork_single(self):
-        self.compareSingleToken('return', token.ReturnK)
-        self.compareSingleToken('int', token.IntK)
+        self.compareSingleToken('return', token.Return)
+        self.compareSingleToken('int', token.Int)
+        self.compareSingleToken('if', token.If)
+        self.compareSingleToken('else', token.Else)
 
     def test_const_single(self):
         self.compareSingleToken('0', token.IntC)
@@ -127,6 +131,21 @@ class TestLexer(unittest.TestCase):
         txt = "a^=3"
         cls = [token.Identifier, token.AssignBXor, token.IntC]
         val = ["a", "", "3"]
+        self.compareMultiToken(txt, cls, val)
+        
+        txt = "a++"
+        cls = [token.Identifier, token.Increment]
+        val = ["a", ""]
+        self.compareMultiToken(txt, cls, val)
+        
+        txt = "--a"
+        cls = [token.Decrement, token.Identifier]
+        val = ["", "a"]
+        self.compareMultiToken(txt, cls, val)
+        
+        txt = "+++a"
+        cls = [token.Increment, token.Add, token.Identifier]
+        val = ["", "", "a"]
         self.compareMultiToken(txt, cls, val)
         
         txt = "int x = 34;"

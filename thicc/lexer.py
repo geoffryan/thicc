@@ -59,9 +59,13 @@ class Lexer():
                     "|=":token.AssignBOr,
                     "^=":token.AssignBXor,
                     "++":token.Increment,
-                    "--":token.Decrement}
-        self.keywords = {'int':token.IntK,
-                        'return':token.ReturnK}
+                    "--":token.Decrement,
+                    ":":token.TernaryA,
+                    "?":token.TernaryB}
+        self.keywords = {'int':token.Int,
+                        'return':token.Return,
+                        'if':token.If,
+                        'else':token.Else}
         self.comments = {   '//': '\n',
                             '/*': '*/'}
         self.intchars = '0123456789'
