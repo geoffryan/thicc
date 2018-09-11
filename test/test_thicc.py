@@ -95,6 +95,14 @@ class TestThicc(unittest.TestCase):
         path = "test/data/stage_7/"
         self.runSampleTestsInvalid(path, "m64")
     
+    #def test_stage8_valid(self):
+    #    path = "test/data/stage_8/"
+    #    self.runSampleTestsValid(path, "m64")
+
+    def test_stage8_invalid(self):
+        path = "test/data/stage_8/"
+        self.runSampleTestsInvalid(path, "m64")
+    
 
     def runSampleTestsValid(self, rootpath, genType, subdir=""):
         path = rootpath+"valid/" + subdir

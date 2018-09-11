@@ -184,18 +184,22 @@ class ReturnS(Statement):
         return out
 
 class ExpressionS(Statement):
-    def __init__(self, expr):
+    def __init__(self, expr=None):
         super().__init__()
         self.expr = expr
 
     def __str__(self, level=0):
         buf = level * "   "
         out = buf + "Statement(Expression):"+'\n'
-        out += self.expr.__str__(level=level+1)
+        if self.expr is None:
+            out += self.expr.__str__(level=level+1)
+        else:
+            out += buf + "   " + "NULL\n"
         return out
 
 class ConditionalS(Statement):
     def __init__(self, condExpr, ifStmnt, elseStmnt=None):
+        super().__init__()
         self.cond = condExpr
         self.ifS = ifStmnt
         self.elseS = elseStmnt
@@ -210,6 +214,7 @@ class ConditionalS(Statement):
 
 class CompoundS(Statement, collections.UserList):
     def __init__(self, items=[]):
+        super().__init__()
         self.data = items
 
     def __str__(self, level=0):
@@ -218,6 +223,92 @@ class CompoundS(Statement, collections.UserList):
         for item in self.data:
             out += item.__str__(level=level+1)
         return out
+
+class IterationS(Statement):
+    pass
+
+class ForS(IterationS):
+    def __init__(self, init, cond, post, body):
+        super().__init__()
+        self.init = init
+        self.cond = cond
+        self.post = post
+        self.body = body
+
+    def __str__(self, level=0):
+        buf = level * "   "
+        out = buf + "Statement(For):"+'\n'
+        out += self.init.__str__(level=level+1)
+        out += self.cond.__str__(level=level+1)
+        out += self.post.__str__(level=level+1)
+        out += self.body.__str__(level=level+1)
+        return out
+
+class ForDeclS(IterationS):
+    def __init__(self, init, cond, post, body):
+        super().__init__()
+        self.init = init
+        self.cond = cond
+        self.post = post
+        self.body = body
+
+    def __str__(self, level=0):
+        buf = level * "   "
+        out = buf + "Statement(ForDeclare):"+'\n'
+        out += self.init.__str__(level=level+1)
+        out += self.cond.__str__(level=level+1)
+        out += self.post.__str__(level=level+1)
+        out += self.body.__str__(level=level+1)
+        return out
+
+class WhileS(IterationS):
+    def __init__(self, cond, body):
+        super().__init__()
+        self.cond = cond
+        self.body = body
+
+    def __str__(self, level=0):
+        buf = level * "   "
+        out = buf + "Statement(While):"+'\n'
+        out += self.cond.__str__(level=level+1)
+        out += self.body.__str__(level=level+1)
+        return out
+
+class DoS(IterationS):
+    def __init__(self, cond, body):
+        super().__init__()
+        self.cond = cond
+        self.body = body
+
+    def __str__(self, level=0):
+        buf = level * "   "
+        out = buf + "Statement(Do):"+'\n'
+        out += self.body.__str__(level=level+1)
+        out += self.cond.__str__(level=level+1)
+        return out
+
+class JumpS(Statement):
+    pass
+
+class BreakS(JumpS):
+    def __init__(self):
+        super().__init__()
+
+    def __str__(self, level=0):
+        buf = level * "   "
+        out = buf + "Statement(Break)" + '\n'
+        return out
+
+class ContinueS(JumpS):
+    def __init__(self):
+        super().__init__()
+
+    def __str__(self, level=0):
+        buf = level * "   "
+        out = buf + "Statement(Continue)" + '\n'
+        return out
+
+
 
 #
 # Declarations

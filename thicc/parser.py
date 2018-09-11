@@ -202,6 +202,19 @@ class Parser():
         #Or a compound?
         elif isinstance(tok, token.OpenBrace):
             stmnt = self.parseCompoundStatement(tokens)
+        #Try loop stuff!
+        elif isinstance(tok, token.For):
+            stmnt = self.parseForStatement(tokens)
+        elif isinstance(tok, token.While):
+            stmnt = self.parseWhileStatement(tokens)
+        elif isinstance(tok, token.Do):
+            stmnt = self.parseDoStatement(tokens)
+        elif isinstance(tok, token.Break):
+            stmnt = self.parseBreakStatement(tokens)
+        elif isinstance(tok, token.Continue):
+            stmnt = self.parseContinueStatement(tokens)
+        elif isinstance(tok, token.Semicolon):
+            stmnt = self.parseNullStatement(tokens)
         #Try just an expression
         else:
             expr = self.parseExpression(tokens)
@@ -240,7 +253,143 @@ class Parser():
         stmnt = symbol.ConditionalS(cond, stmntTrue, stmntFalse)
 
         return stmnt
+
+    def parseNullStatement(self, tokens):
+        tok = tokens.pop()
+        if not isinstance(tok, token.Semicolon):
+            raise MissingSemicolonError(tok)
+        return symbol.ExpressionS(None)
+
+    def parseBreakStatement(self, tokens):
+        if len(tokens) < 2:
+            raise InvalidStatementError(tokens[-1])
+        tok1 = tokens.pop()
+        tok2 = tokens.pop()
+        if not isinstance(tok1, token.Break):
+            raise InvalidStatementError(tok)
+        if not isinstance(tok2, token.Semicolon):
+            raise MissingSemicolonError(tok)
+        return symbol.BreakS()
+
+    def parseContinueStatement(self, tokens):
+        if len(tokens) < 2:
+            raise InvalidStatementError(tokens[-1])
+        tok1 = tokens.pop()
+        tok2 = tokens.pop()
+        if not isinstance(tok1, token.Continue):
+            raise InvalidStatementError(tok)
+        if not isinstance(tok2, token.Semicolon):
+            raise MissingSemicolonError(tok)
+        return symbol.ContinueS()
+
+    def parseWhileStatement(self, tokens):
+        if len(tokens) < 3:
+            raise InvalidStatementError(tokens[-1])
+        tok1 = tokens.pop()
+        tok2 = tokens.pop()
+        if not isinstance(tok1, token.While):
+            raise InvalidStatementError(tok1)
+        if not isinstance(tok2, token.OpenParentheses):
+            raise ExpectedParenthesesError(tok2)
+        
+        cond = self.parseExpression(tokens)
+
+        if len(tokens) < 2:
+            raise InvalidStatementError(tokens[-1])
+
+        tok3 = tokens.pop()
+        if not isinstance(tok3, token.ClosedParentheses):
+            raise UnmatchedParenthesesError(tok3)
+
+        body = self.parseStatement(tokens)
+
+        stmnt = symbol.WhileS(cond, body)
+
+        return stmnt
+
+    def parseDoStatement(self, tokens):
+        if len(tokens) < 2:
+            raise InvalidStatementError(tokens[-1])
+        tok1 = tokens.pop()
+        if not isinstance(tok1, token.Do):
+            raise InvalidStatementError(tok1)
+        
+        body = self.parseStatement(tokens)
+
+        if len(tokens) < 3:
+            raise InvalidStatementError(tokens[-1])
+        
+        tok2 = tokens.pop()
+        tok3 = tokens.pop()
+        if not isinstance(tok2, token.While):
+            raise InvalidStatementError(tok2)
+        if not isinstance(tok3, token.OpenParentheses):
+            raise ExpectedParenthesesError(tok3)
+
+        cond = self.parseExpression(tokens)
+
+        if len(tokens) < 2:
+            raise InvalidStatementError(tokens[-1])
+        
+        tok4 = tokens.pop()
+        tok5 = tokens.pop()
+        if not isinstance(tok4, token.ClosedParentheses):
+            raise UnmatchedParenthesesError(tok4)
+        if not isinstance(tok5, token.Semicolon):
+            raise MissingSemicolonError(tok5)
+
+        stmnt = symbol.DoS(cond, body)
+
+        return stmnt
     
+    def parseForStatement(self, tokens):
+        tok = tokens.pop()
+        if not isinstance(tok, token.For):
+            raise InvalidStatementError(tok)
+
+        tok = tokens.pop()
+        if not isinstance(tok, token.OpenParentheses):
+            raise ExpectedParenthesesError(tok)
+
+        tok = tokens[-1]
+
+        if isinstance(tok, token.Int):
+            init = self.parseDeclaration(tokens)
+        elif isinstance(tok, token.Semicolon):
+            tokens.pop()
+            init = None
+        else:
+            init = self.parseExpression(tokens)
+            tok = tokens.pop()
+            if not isinstance(tok, token.Semicolon):
+                raise MissingSemicolonError(tok)
+
+        tok = tokens[-1]
+        if isinstance(tok, token.Semicolon):
+            tokens.pop()
+            cond = symbol.ConstantE(token.IntC("1"))
+        else:
+            cond = self.parseExpression(tokens)
+            tok = tokens.pop()
+            if not isinstance(tok, token.Semicolon):
+                raise MissingSemicolonError(tok)
+        
+        tok = tokens[-1]
+        if isinstance(tok, token.ClosedParentheses):
+            tokens.pop()
+            post = None
+        else:
+            post = self.parseExpression(tokens)
+            tok = tokens.pop()
+            if not isinstance(tok, token.ClosedParentheses):
+                raise UnmatchedParenthesesError(tok)
+
+        body = self.parseStatement(tokens)
+
+        stmnt = symbol.ForS(init, cond, post, body)
+
+        return stmnt
+
     def parseExpression(self, tokens):
         expr = self.parseAssignExpr(tokens)
         return expr

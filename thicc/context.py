@@ -75,4 +75,24 @@ class VarMap():
             out += buf1 + "{0:s}: {1:d}\n".format(key, self.map[key])
 
         return out
-        
+       
+class Context():
+
+    def __init__(self, superVarMap=None, continueLabel=None, breakLabel=None,
+                    superContext=None):
+        if superContext is None:
+            self.vmap = VarMap(superVarMap)
+            self.continueLabel = continueLabel
+            self.breakLabel = breakLabel
+            self.superContext = None
+        else:
+            self.vmap = VarMap(superContext.vmap)
+            self.continueLabel = superContext.continueLabel
+            self.breakLabel = superContext.breakLabel
+            self.superContext = superContext
+
+    def addVar(self, tok, size=8):
+        self.vmap.add(tok, size)
+
+    def varLoc(self, tok):
+        return self.vmap.getOffset(tok)

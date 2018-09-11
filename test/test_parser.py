@@ -371,8 +371,6 @@ class TestParser(unittest.TestCase):
                 symbol.ConditionalE(se, sf, sg))
         self.compareExpression(toks, sym)
 
-
-
     def test_statement(self):
 
         toks = [token.Return(), token.IntC("36"), token.Semicolon()]

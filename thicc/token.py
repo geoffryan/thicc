@@ -74,7 +74,6 @@ class Continue(Keyword):
     def __init__(self):
         self.val = 'continue'
 
-
 #
 # Constants
 #

@@ -1,7 +1,7 @@
 from . import token
 from . import symbol
 from . import exception
-from . import varmap
+from . import context
 
 class GeneratorError(exception.ThiccError):
     pass
@@ -28,6 +28,16 @@ class InvalidASTHeadError(GeneratorError):
 
 class InvalidBlockItemError(GeneratorError):
     def __init__(self, expr, message="Object is not block item."):
+        self.expression = expr
+        self.message = message
+
+class InvalidBreakContextError(GeneratorError):
+    def __init__(self, expr=None, message="Break statement not in valid context."):
+        self.expression = expr
+        self.message = message
+
+class InvalidContinueContextError(GeneratorError):
+    def __init__(self, expr=None, message="Continue statement not in valid context."):
         self.expression = expr
         self.message = message
 
@@ -78,8 +88,6 @@ class Generator():
 
     def generateFunction(self, func):
 
-        vmap = varmap.VarMap()
-
         name = func.name.val
         head1 = [   ".globl _{0:s}".format(name)]
         head2 = [   "_{0:s}:".format(name)]
@@ -103,15 +111,15 @@ class Generator():
         code = head1 + head2 + prologue + body
         return code
 
-    def generateCompoundStatement(self, stmnt, superMap, dealloc=True):
+    def generateCompoundStatement(self, stmnt, superCont, dealloc=True):
 
-        vmap = varmap.VarMap(superMap)
+        cont = context.Context(superContext=superCont)
         code = []
         for item in stmnt:
             if isinstance(item, symbol.Declaration):
-                code += self.generateDeclaration(item, vmap)
+                code += self.generateDeclaration(item, cont)
             elif isinstance(item, symbol.Statement):
-                code += self.generateStatement(item, vmap)
+                code += self.generateStatement(item, cont)
             else:
                 raise InvalidBlockItemError(item)
 
@@ -119,77 +127,78 @@ class Generator():
             # Deallocate variables from the stack
             # ie. Move the stack pointer back by the amount it has changed
             #     in this block.
-            bytesAdded = "${0:d}".format(vmap.size)
+            bytesAdded = "${0:d}".format(cont.vmap.size)
             deallocCode = [self.instruct("addq", bytesAdded, "%rsp")]
 
             code += deallocCode
 
         return code
 
-    def generateDeclaration(self, declaration, vmap):
+    def generateDeclaration(self, declaration, cont):
         if isinstance(declaration, symbol.VariableD):
             if declaration.expr is not None:
-                init = self.generateExpression(declaration.expr, vmap)
+                init = self.generateExpression(declaration.expr, cont)
             else:
                 init = [self.instruct("movq","$0","%rax")]
             declare  = [self.instruct("push","%rax")]
-            vmap.add(declaration.id)
+            cont.addVar(declaration.id)
             code = init+declare
         else:
             raise UnknownDeclarationError(declaration)
 
         return code
 
-    def generateStatement(self, statement, vmap):
+    def generateStatement(self, statement, cont):
         if isinstance(statement, symbol.ReturnS):
-            setValue = self.generateExpression(statement.value, vmap)
+            setValue = self.generateExpression(statement.value, cont)
             epilogue = [self.instruct("movq","%rbp","%rsp"),
                         self.instruct("pop","%rbp")]
             returnLine = [self.instruct("ret")]
             code = setValue + epilogue + returnLine
         elif isinstance(statement, symbol.ExpressionS):
-            code = self.generateExpression(statement.expr, vmap)
+            code = self.generateExpression(statement.expr, cont)
         elif isinstance(statement, symbol.ConditionalS):
-            code = self.conditionalStmntCode(statement, vmap)
+            code = self.conditionalStmntCode(statement, cont)
         elif isinstance(statement, symbol.CompoundS):
-            code = self.generateCompoundStatement(statement, vmap)
+            code = self.generateCompoundStatement(statement, cont)
+        elif isinstance(statement, symbol.WhileS):
+            code = self.whileStmntCode(statement, cont)
+        elif isinstance(statement, symbol.DoS):
+            code = self.doStmntCode(statement, cont)
+        elif isinstance(statement, symbol.ForS):
+            code = self.forStmntCode(statement, cont)
+        elif isinstance(statement, symbol.ContinueS):
+            code = self.continueStmntCode(statement, cont)
+        elif isinstance(statement, symbol.BreakS):
+            code = self.breakStmntCode(statement, cont)
         else:
             raise UnknownStatementError(statement)
 
         return code
 
-    def generateExpression(self, expr, vmap):
-        if isinstance(expr, symbol.ConstantE):
+    def generateExpression(self, expr, cont):
+        if expr is None:
+            code = []
+        elif isinstance(expr, symbol.ConstantE):
             code = self.constExprCode(expr)
         elif isinstance(expr, symbol.VarRefE):
-            code = self.varRefCode(expr, vmap)
+            code = self.varRefCode(expr, cont)
         elif isinstance(expr, symbol.IncrementPostE):
-            code = self.incrementPostCode(expr, vmap)
+            code = self.incrementPostCode(expr, cont)
         elif isinstance(expr, symbol.IncrementPreE):
-            code = self.incrementPreCode(expr, vmap)
+            code = self.incrementPreCode(expr, cont)
         elif isinstance(expr, symbol.UnaryOpE):
-            code = self.unaryOpCode(expr, vmap)
+            code = self.unaryOpCode(expr, cont)
         elif isinstance(expr, symbol.BinaryOpE):
-            code = self.binaryOpCode(expr, vmap)
+            code = self.binaryOpCode(expr, cont)
         elif isinstance(expr, symbol.AssignE):
-            code = self.assignOpCode(expr, vmap)
+            code = self.assignOpCode(expr, cont)
         elif isinstance(expr, symbol.ConditionalE):
-            code = self.conditionalExprCode(expr, vmap)
+            code = self.conditionalExprCode(expr, cont)
         else:
             raise UnknownExpressionError(expr)
 
         return code
-
-    def constExprCode(self, expr):
-        pass
-    def varRefCode(self, expr, vmap):
-        pass
-    def unaryOpCode(self, expr, vmap):
-        pass
-    def binaryOpCode(self, expr, vmap):
-        pass
-    def assignOpCode(self, expr, vmap):
-        pass
 
 class Generator_x86_64(Generator):
 
@@ -198,15 +207,15 @@ class Generator_x86_64(Generator):
         code = [self.instruct("movq","${0:s}".format(val),"%rax")]
         return code
 
-    def varRefCode(self, expr, vmap):
-        offset = vmap.getOffset(expr.id)
+    def varRefCode(self, expr, cont):
+        offset = cont.varLoc(expr.id)
         var = "{0:d}(%rbp)".format(offset)
         code = [self.instruct("movq",var,"%rax")]
         return code
 
-    def incrementPostCode(self, expr, vmap):
-        refCode = self.varRefCode(expr.var, vmap)
-        offset = vmap.getOffset(expr.var.id)
+    def incrementPostCode(self, expr, cont):
+        refCode = self.varRefCode(expr.var, cont)
+        offset = cont.varLoc(expr.var.id)
         var = "{0:d}(%rbp)".format(offset)
         if isinstance(expr.op, token.Increment):
             incCode = [self.instruct("incq",var)]
@@ -217,8 +226,8 @@ class Generator_x86_64(Generator):
         code = refCode + incCode
         return code
 
-    def incrementPreCode(self, expr, vmap):
-        offset = vmap.getOffset(expr.var.id)
+    def incrementPreCode(self, expr, cont):
+        offset = cont.varLoc(expr.var.id)
         var = "{0:d}(%rbp)".format(offset)
         if isinstance(expr.op, token.Increment):
             incCode = [self.instruct("incq",var)]
@@ -226,14 +235,14 @@ class Generator_x86_64(Generator):
             incCode = [self.instruct("decq",var)]
         else:
             raise UnknownIncrementOperatorError(expr.op)
-        refCode = self.varRefCode(expr.var, vmap)
+        refCode = self.varRefCode(expr.var, cont)
         code = incCode + refCode
         return code
 
 
-    def unaryOpCode(self, expr, vmap):
+    def unaryOpCode(self, expr, cont):
 
-        codeSet = self.generateExpression(expr.expr, vmap)
+        codeSet = self.generateExpression(expr.expr, cont)
         op = expr.op
         if isinstance(op, token.Not):
             codeOp = [  self.instruct("cmpl", "$0", "%eax"),
@@ -249,15 +258,15 @@ class Generator_x86_64(Generator):
 
         return code
 
-    def binaryOpCode(self, expr, vmap):
+    def binaryOpCode(self, expr, cont):
 
         op = expr.op
         e1 = expr.expr1
         e2 = expr.expr2
 
-        codeSet1 = self.generateExpression(e1, vmap)
+        codeSet1 = self.generateExpression(e1, cont)
         codePush1 = [   self.instruct("pushq", "%rax")]
-        codeSet2 = self.generateExpression(e2, vmap)
+        codeSet2 = self.generateExpression(e2, cont)
         codeSet2 += [   self.instruct("movl", "%eax", "%ecx")]
         codePop1  = [   self.instruct("popq", "%rax")]
 
@@ -329,9 +338,9 @@ class Generator_x86_64(Generator):
         code = codeSet1+codePush1+codeSet2+codePop1+codeOp
         return code
 
-    def assignOpCode(self, expr, vmap):
-        offset = vmap.getOffset(expr.id)
-        calc = self.generateExpression(expr.expr, vmap)
+    def assignOpCode(self, expr, cont):
+        offset = cont.varLoc(expr.id)
+        calc = self.generateExpression(expr.expr, cont)
         var = "{0:d}(%rbp)".format(offset)
         if isinstance(expr.op, token.Assign):
             assign = [  self.instruct("movq", "%rax", var)]
@@ -379,11 +388,11 @@ class Generator_x86_64(Generator):
         code = calc + assign
         return code
 
-    def conditionalExprCode(self, expr, vmap):
+    def conditionalExprCode(self, expr, cont):
 
-        evalCond = self.generateExpression(expr.cond, vmap)
-        evalTrue = self.generateExpression(expr.true, vmap)
-        evalFalse = self.generateExpression(expr.false, vmap)
+        evalCond = self.generateExpression(expr.cond, cont)
+        evalTrue = self.generateExpression(expr.true, cont)
+        evalFalse = self.generateExpression(expr.false, cont)
         falseLabel = self.makeLabel()
         endLabel = self.makeLabel()
 
@@ -399,13 +408,13 @@ class Generator_x86_64(Generator):
 
         return code
 
-    def conditionalStmntCode(self, stmnt, vmap):
+    def conditionalStmntCode(self, stmnt, cont):
 
-        evalCond = self.generateExpression(stmnt.cond, vmap)
-        evalTrue = self.generateStatement(stmnt.ifS, vmap)
+        evalCond = self.generateExpression(stmnt.cond, cont)
+        evalTrue = self.generateStatement(stmnt.ifS, cont)
         
         if stmnt.elseS is not None:
-            evalFalse = self.generateStatement(stmnt.elseS, vmap)
+            evalFalse = self.generateStatement(stmnt.elseS, cont)
             falseLabel = self.makeLabel()
             endLabel = self.makeLabel()
 
@@ -429,6 +438,119 @@ class Generator_x86_64(Generator):
             code = evalCond + checkCond + evalTrue + lblEnd
 
         return code
+
+    def whileStmntCode(self, stmnt, superCont):
+        cont = context.Context(superContext=superCont)
+        startLabel = self.makeLabel()
+        endLabel = self.makeLabel()
+        cont.continueLabel = startLabel
+        cont.breakLabel = endLabel
+
+        lblStart =  [   self.label(startLabel)]
+
+        evalCond = self.generateExpression(stmnt.cond, cont)
+
+        checkCond = [   self.instruct("cmpq", "$0", "%rax"),
+                        self.instruct("je", endLabel)]
+
+        evalStmnt = self.generateStatement(stmnt.body, cont)
+
+        loop =      [   self.instruct("jmp", startLabel)]
+
+        lblEnd =    [   self.label(endLabel)]
+
+        stmnt = lblStart + evalCond + checkCond + evalStmnt + loop + lblEnd
+
+        return stmnt
+
+    def doStmntCode(self, stmnt, superCont):
+        cont = context.Context(superContext=superCont)
+        startLabel = self.makeLabel()
+        condLabel = self.makeLabel()
+        endLabel = self.makeLabel()
+        cont.continueLabel = condLabel
+        cont.breakLabel = endLabel
+
+        lblStart =  [   self.label(startLabel)]
+
+        evalStmnt = self.generateStatement(stmnt.body, cont)
+
+        lblCond =   [   self.label(condLabel)]
+
+        evalCond = self.generateExpression(stmnt.cond, cont)
+        
+        checkCond = [   self.instruct("cmpq", "$0", "%rax"),
+                        self.instruct("je", endLabel)]
+
+        loop =      [   self.instruct("jmp", startLabel)]
+
+        lblEnd =    [   self.label(endLabel)]
+
+        stmnt = lblStart + evalStmnt + evalCond + checkCond + loop + lblEnd
+
+        return stmnt
+
+    def forStmntCode(self, stmnt, superCont):
+        cont = context.Context(superContext=superCont)
+        startLabel = self.makeLabel()
+        postLabel = self.makeLabel()
+        endLabel = self.makeLabel()
+        cont.continueLabel = postLabel
+        cont.breakLabel = endLabel
+
+        if stmnt.init is None:
+            evalInit = []
+        elif isinstance(stmnt.init, symbol.Declaration):
+            evalInit = self.generateDeclaration(stmnt.init, cont)
+        else:
+            evalInit = self.generateExpression(stmnt.init, cont)
+
+        lblStart =  [   self.label(startLabel)]
+
+        evalCond = self.generateExpression(stmnt.cond, cont)
+
+        checkCond = [   self.instruct("cmpq", "$0", "%rax"),
+                        self.instruct("je", endLabel)]
+
+        evalStmnt = self.generateStatement(stmnt.body, cont)
+
+        lblPost =   [   self.label(postLabel)]
+
+        if stmnt.post is None:
+            evalPost = []
+        else:
+            evalPost = self.generateExpression(stmnt.post, cont)
+
+        loop =      [   self.instruct("jmp", startLabel)]
+
+        lblEnd =    [   self.label(endLabel)]
+        
+        if isinstance(stmnt.init, symbol.Declaration):
+            bytesAdded = "${0:d}".format(cont.vmap.size)
+            dealloc = [ self.instruct("addq", bytesAdded, "%rsp")]
+        else:
+            dealloc = []
+
+        stmnt = evalInit + lblStart + evalCond + checkCond + evalStmnt\
+                + lblPost + evalPost + loop + lblEnd + dealloc
+
+        return stmnt
+
+    def breakStmntCode(self, stmnt, cont):
+        if cont.breakLabel is None:
+            raise InvalidBreakContextError()
+
+        stmnt =  [   self.instruct("jmp", cont.breakLabel)]
+
+        return stmnt
+        
+    def continueStmntCode(self, stmnt, cont):
+        if cont.continueLabel is None:
+            raise InvalidContinueContextError()
+
+        stmnt =  [   self.instruct("jmp", cont.continueLabel)]
+
+        return stmnt
         
 
 """
