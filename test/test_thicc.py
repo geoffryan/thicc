@@ -87,6 +87,14 @@ class TestThicc(unittest.TestCase):
         path = "test/data/stage_6/"
         self.runSampleTestsInvalid(path, "m64", "statement/")
     
+    def test_stage7_valid(self):
+        path = "test/data/stage_7/"
+        self.runSampleTestsValid(path, "m64")
+
+    def test_stage7_invalid(self):
+        path = "test/data/stage_7/"
+        self.runSampleTestsInvalid(path, "m64")
+    
 
     def runSampleTestsValid(self, rootpath, genType, subdir=""):
         path = rootpath+"valid/" + subdir
@@ -135,6 +143,9 @@ class TestThicc(unittest.TestCase):
 
         for filename in files:
 
+            if filename[-4:] == ".swp":
+                continue
+
             if filename[:10] == "syntax_err":
                 e = thicc.parser.ParseError
             else:
@@ -143,8 +154,9 @@ class TestThicc(unittest.TestCase):
             #Test Result
             with open(path+filename, "r") as f:
                 text = f.read()
-           
-            self.assertRaises(e, thicc.compileC, text, genType)
+          
+            with self.assertRaises(e, msg=filename):
+                thicc.compileC(text, genType)
 
 
 if __name__ == "__main__":

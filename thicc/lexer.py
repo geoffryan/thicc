@@ -65,7 +65,12 @@ class Lexer():
         self.keywords = {'int':token.Int,
                         'return':token.Return,
                         'if':token.If,
-                        'else':token.Else}
+                        'else':token.Else,
+                        'for':token.For,
+                        'while':token.While,
+                        'do':token.Do,
+                        'break':token.Break,
+                        'continue':token.Continue}
         self.comments = {   '//': '\n',
                             '/*': '*/'}
         self.intchars = '0123456789'

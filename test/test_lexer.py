@@ -64,6 +64,11 @@ class TestLexer(unittest.TestCase):
         self.compareSingleToken('int', token.Int)
         self.compareSingleToken('if', token.If)
         self.compareSingleToken('else', token.Else)
+        self.compareSingleToken('for', token.For)
+        self.compareSingleToken('while', token.While)
+        self.compareSingleToken('do', token.Do)
+        self.compareSingleToken('break', token.Break)
+        self.compareSingleToken('continue', token.Continue)
 
     def test_const_single(self):
         self.compareSingleToken('0', token.IntC)

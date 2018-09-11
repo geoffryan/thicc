@@ -25,8 +25,13 @@ class InvalidIdentifierError(VariableMapError):
 class VarMap():
     def __init__(self, superMap=None, word=8):
         self.map = {}
-        self.superMap = superMap
-        self.stackIndex = -word
+        self.size = 0
+        if superMap is not None:
+            self.superMap = superMap
+            self.stackIndex = superMap.stackIndex
+        else:
+            self.superMap = None
+            self.stackIndex = -word
     
     def add(self, tok, size=8):
         if not isinstance(tok, token.Identifier):
@@ -36,6 +41,7 @@ class VarMap():
             raise DuplicateIdentifierError(tok.val)
         self.map[name] = self.stackIndex
         self.stackIndex -= size
+        self.size += size
 
     def getOffset(self, tok):
         try:
@@ -45,9 +51,28 @@ class VarMap():
                 offset = self.superMap.getOffset(tok)
             else:
                 raise UnknownIdentifierError(tok.val)
+
         return offset
 
+    def getDepth(self):
+        if self.superMap is None:
+            return 0
+        else:
+            return self.superMap.getDepth() + 1
 
+    def __str__(self):
+        if self.superMap is None:
+            out = ""
+        else:
+            out = self.superMap.__str__()
+        space = 4*" "
+        level = self.getDepth()
+        buf0 = level * space
+        buf1 = (level+1) * space
+        out += buf0 + "vmap (size={0:d}, stackIndex={1:d})\n".format(
+                        self.size, self.stackIndex)
+        for key in self.map.keys():
+            out += buf1 + "{0:s}: {1:d}\n".format(key, self.map[key])
 
-
-
+        return out
+        

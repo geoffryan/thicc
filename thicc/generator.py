@@ -85,23 +85,45 @@ class Generator():
         head2 = [   "_{0:s}:".format(name)]
         prologue = [self.instruct("push", "%rbp"),
                     self.instruct("movq", "%rsp", "%rbp")]
-        prologue = [self.instruct("push", "%rbp"),
-                    self.instruct("movq", "%rsp", "%rbp")]
-        body = []
-        for item in func.body:
-            if isinstance(item, symbol.Declaration):
-                body += self.generateDeclaration(item, vmap)
-            elif isinstance(item, symbol.Statement):
-                body += self.generateStatement(item, vmap)
-            else:
-                raise InvalidBlockItemError(item)
 
+        """
         if len(func.body) == 0\
                 or not isinstance(func.body[-1], symbol.ReturnS):
             ret0 = symbol.ReturnS(symbol.ConstantE(token.IntC("0")))
-            body += self.generateStatement(ret0, vmap)
+            func.body.append(ret0)
+        """
+
+        body = self.generateCompoundStatement(func.body, None, dealloc=False)
+        
+        if len(func.body) == 0\
+                or not isinstance(func.body[-1], symbol.ReturnS):
+            ret0 = symbol.ReturnS(symbol.ConstantE(token.IntC("0")))
+            body += self.generateStatement(ret0, None)
 
         code = head1 + head2 + prologue + body
+        return code
+
+    def generateCompoundStatement(self, stmnt, superMap, dealloc=True):
+
+        vmap = varmap.VarMap(superMap)
+        code = []
+        for item in stmnt:
+            if isinstance(item, symbol.Declaration):
+                code += self.generateDeclaration(item, vmap)
+            elif isinstance(item, symbol.Statement):
+                code += self.generateStatement(item, vmap)
+            else:
+                raise InvalidBlockItemError(item)
+
+        if dealloc:
+            # Deallocate variables from the stack
+            # ie. Move the stack pointer back by the amount it has changed
+            #     in this block.
+            bytesAdded = "${0:d}".format(vmap.size)
+            deallocCode = [self.instruct("addq", bytesAdded, "%rsp")]
+
+            code += deallocCode
+
         return code
 
     def generateDeclaration(self, declaration, vmap):
@@ -129,6 +151,8 @@ class Generator():
             code = self.generateExpression(statement.expr, vmap)
         elif isinstance(statement, symbol.ConditionalS):
             code = self.conditionalStmntCode(statement, vmap)
+        elif isinstance(statement, symbol.CompoundS):
+            code = self.generateCompoundStatement(statement, vmap)
         else:
             raise UnknownStatementError(statement)
 
@@ -171,7 +195,7 @@ class Generator_x86_64(Generator):
 
     def constExprCode(self, expr):
         val = expr.value.val
-        code = [self.instruct("movl","${0:s}".format(val),"%eax")]
+        code = [self.instruct("movq","${0:s}".format(val),"%rax")]
         return code
 
     def varRefCode(self, expr, vmap):

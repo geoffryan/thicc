@@ -1,3 +1,4 @@
+import collections
 
 class ASTNode():
     def __init__(self):
@@ -48,8 +49,8 @@ class Function(ASTNode):
     def __str__(self, level=0):
         buf = level * "   "
         out = buf + "Function: " + self.name.val + '\n'
-        for stmnt in body:
-            out += stmnt.__str__(level=level+1)
+        for item in self.body:
+            out += item.__str__(level=level+1)
         return out
 
 
@@ -190,7 +191,7 @@ class ExpressionS(Statement):
     def __str__(self, level=0):
         buf = level * "   "
         out = buf + "Statement(Expression):"+'\n'
-        out += self.value.__str__(level=level+1)
+        out += self.expr.__str__(level=level+1)
         return out
 
 class ConditionalS(Statement):
@@ -207,6 +208,17 @@ class ConditionalS(Statement):
             out += self.elseS.__str__(level=level+1)
         return out
 
+class CompoundS(Statement, collections.UserList):
+    def __init__(self, items=[]):
+        self.data = items
+
+    def __str__(self, level=0):
+        buf = level * "   "
+        out = buf + "Statement(Compound):"+'\n'
+        for item in self.data:
+            out += item.__str__(level=level+1)
+        return out
+
 #
 # Declarations
 #
@@ -219,8 +231,8 @@ class VariableD(Declaration):
 
     def __str__(self, level=0):
         buf = level * "   "
-        out = buf + "Declaration(Variable):" + self.id.val+'\n'
+        out = buf + "Declaration(Variable): " + self.id.val+'\n'
         if self.expr is not None:
-            out += self.value.__str__(level=level+1)
+            out += self.expr.__str__(level=level+1)
         return out
 

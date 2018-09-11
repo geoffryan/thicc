@@ -40,6 +40,11 @@ class UnmatchedParenthesesError(ParseError):
         self.expression = expr
         self.message = message
 
+class UnmatchedBraceError(ParseError):
+    def __init__(self, expr="", message="Expected a }"):
+        self.expression = "No }"
+        self.message = message
+
 class InvalidVariableRefError(ParseError):
     def __init__(self, expr, message="Invalid Variable ref"):
         self.expression = expr
@@ -52,6 +57,11 @@ class MissingSemicolonError(ParseError):
 
 class IncompleteConditionalExpressionError(ParseError):
     def __init__(self, expr, message="Missing ?"):
+        self.expression = expr
+        self.message = message
+
+class TrailingCharactersProgramError(ParseError):
+    def __init__(self, expr, message="Trailing characters in program"):
         self.expression = expr
         self.message = message
 
@@ -80,6 +90,10 @@ class Parser():
 
     def parseProgram(self, tokens):
         func = self.parseFunction(tokens)
+
+        if len(tokens) != 0:
+            raise TrailingCharactersProgramError(tokens[-1].val)
+
         return symbol.Program(func)
 
     def parseFunction(self, tokens):
@@ -99,36 +113,44 @@ class Parser():
         if not isinstance(tok, token.ClosedParentheses):
             raise InvalidFunctionError(tok.val)
 
-        tok = tokens[-1]
-        if not isinstance(tok, token.OpenBrace):
-            raise InvalidFunctionError(tok.val)
-
-        #body is a list of statements, the braces have been removed
-        body = self.parseBlock(tokens)
+        body = self.parseCompoundStatement(tokens)
 
         return symbol.Function(ident, body)
 
     def parseBlock(self, tokens):
         # return a list of statements.  If the block begins with a brace "{"
         # read statements until "}".  Otherise parse a single statement and
-        # return it in a list [stmnt]
+        # return it in a list
 
-        tok = tokens.pop()
+        tok = tokens[-1]
 
         if isinstance(tok, token.OpenBrace):
-            block = []
-            while not isinstance(tokens[-1], token.ClosedBrace):
-                stmnt = self.parseBlockItem(tokens)
-                block.append(stmnt)
-                if len(tokens)==0:
-                    raise UnmatchedBraceError()
-            tokens.pop()    #Remove }
+            block = self.parseCompoundStatement(tokens)
         else:
-            tokens.append(tok)
-            stmnt = self.parseStatement(tokens)
-            block = [stmnt]
+            block = self.parseStatement(tokens)
 
         return block
+
+    def parseCompoundStatement(self, tokens):
+        
+        tok = tokens.pop()
+        if not isinstance(tok, token.OpenBrace):
+            raise InvalidStatementError(tok)
+
+        if len(tokens) == 0:
+            raise UnmatchedBraceError()
+
+        items = []
+        while not isinstance(tokens[-1], token.ClosedBrace):
+            item = self.parseBlockItem(tokens)
+            items.append(item)
+            if len(tokens)==0:
+                raise UnmatchedBraceError()
+        tokens.pop()    #Remove }
+
+        stmnt = symbol.CompoundS(items)
+
+        return stmnt
 
     def parseBlockItem(self, tokens):
         tok = tokens[-1]
@@ -177,6 +199,9 @@ class Parser():
         #Maybe a conditional
         elif isinstance(tok, token.If):
             stmnt = self.parseConditionalStmnt(tokens)
+        #Or a compound?
+        elif isinstance(tok, token.OpenBrace):
+            stmnt = self.parseCompoundStatement(tokens)
         #Try just an expression
         else:
             expr = self.parseExpression(tokens)

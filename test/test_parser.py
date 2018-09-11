@@ -388,7 +388,7 @@ class TestParser(unittest.TestCase):
         tokFoo = token.Identifier("foo")
         tok88 = token.IntC("88")
         sym = symbol.Function(tokFoo, 
-                                [symbol.ReturnS(symbol.ConstantE(tok88))])
+                                symbol.CompoundS([symbol.ReturnS(symbol.ConstantE(tok88))]))
 
         self.compareFunction(toks, sym)
 
@@ -403,9 +403,10 @@ class TestParser(unittest.TestCase):
         tokFoo = token.Identifier("foo")
         tok56 = token.IntC("56")
         tokb = token.Identifier("b")
-        sym = symbol.Function(tokFoo, [
-            symbol.VariableD(tokb, symbol.ConstantE(tok56)),
-            symbol.ReturnS(symbol.VarRefE(tokb))])
+        sym = symbol.Function(tokFoo, 
+            symbol.CompoundS([
+                symbol.VariableD(tokb, symbol.ConstantE(tok56)),
+                symbol.ReturnS(symbol.VarRefE(tokb))]))
 
         self.compareFunction(toks, sym)
 
@@ -418,7 +419,8 @@ class TestParser(unittest.TestCase):
         tok88 = token.IntC("88")
         sym = symbol.Program(
                 symbol.Function(tokFoo, 
-                    [symbol.ReturnS(symbol.ConstantE(tok88))]))
+                    symbol.CompoundS(
+                        [symbol.ReturnS(symbol.ConstantE(tok88))])))
 
         self.compareProgram(toks, sym)
 

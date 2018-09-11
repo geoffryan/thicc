@@ -54,6 +54,27 @@ class Else(Keyword):
     def __init__(self):
         self.val = 'else'
 
+class For(Keyword):
+    def __init__(self):
+        self.val = 'for'
+
+class While(Keyword):
+    def __init__(self):
+        self.val = 'while'
+
+class Do(Keyword):
+    def __init__(self):
+        self.val = 'do'
+
+class Break(Keyword):
+    def __init__(self):
+        self.val = 'break'
+
+class Continue(Keyword):
+    def __init__(self):
+        self.val = 'continue'
+
+
 #
 # Constants
 #
