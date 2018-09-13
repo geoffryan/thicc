@@ -155,7 +155,7 @@ class TestThicc(unittest.TestCase):
                 continue
 
             if filename[:10] == "syntax_err":
-                e = thicc.parser.ParseError
+                e = thicc.symbol.ParseError
             else:
                 e = thicc.exception.ThiccError
 

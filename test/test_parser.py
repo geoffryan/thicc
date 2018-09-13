@@ -17,7 +17,7 @@ class TestParser(unittest.TestCase):
 
     def compareFunction(self, toks, ast0):
         parser = thicc.parser.Parser()
-        ast = parser.parseFunction(toks[::-1])
+        ast = parser.parseFunctionDec(toks[::-1])
         self.assertEqual(ast, ast0)
 
     def compareProgram(self, toks, ast0):
@@ -385,7 +385,7 @@ class TestParser(unittest.TestCase):
                 token.IntC("88"), token.Semicolon(), token.ClosedBrace()]
         tokFoo = token.Identifier("foo")
         tok88 = token.IntC("88")
-        sym = symbol.Function(tokFoo, 
+        sym = symbol.FunctionD(tokFoo,None, 
                                 symbol.CompoundS([symbol.ReturnS(symbol.ConstantE(tok88))]))
 
         self.compareFunction(toks, sym)
@@ -401,7 +401,7 @@ class TestParser(unittest.TestCase):
         tokFoo = token.Identifier("foo")
         tok56 = token.IntC("56")
         tokb = token.Identifier("b")
-        sym = symbol.Function(tokFoo, 
+        sym = symbol.FunctionD(tokFoo, None,
             symbol.CompoundS([
                 symbol.VariableD(tokb, symbol.ConstantE(tok56)),
                 symbol.ReturnS(symbol.VarRefE(tokb))]))
@@ -416,9 +416,9 @@ class TestParser(unittest.TestCase):
         tokFoo = token.Identifier("foo")
         tok88 = token.IntC("88")
         sym = symbol.Program(
-                symbol.Function(tokFoo, 
+                [symbol.FunctionD(tokFoo, None,
                     symbol.CompoundS(
-                        [symbol.ReturnS(symbol.ConstantE(tok88))])))
+                        [symbol.ReturnS(symbol.ConstantE(tok88))]))])
 
         self.compareProgram(toks, sym)
 

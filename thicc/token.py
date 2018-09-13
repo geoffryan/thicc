@@ -111,6 +111,10 @@ class ClosedParentheses(Parentheses):
     def __init__(self):
         self.val = ')'
 
+class Comma(Punctuator):
+    def __init__(self):
+        self.val = ','
+
 # Operators
 
 class Operator(Punctuator):

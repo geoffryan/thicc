@@ -58,6 +58,7 @@ class TestLexer(unittest.TestCase):
         self.compareSingleToken('=', token.Assign)
         self.compareSingleToken('?', token.QuestionMark)
         self.compareSingleToken(':', token.Colon)
+        self.compareSingleToken(',', token.Comma)
 
     def test_keywork_single(self):
         self.compareSingleToken('return', token.Return)

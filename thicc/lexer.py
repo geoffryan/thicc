@@ -61,7 +61,8 @@ class Lexer():
                     "++":token.Increment,
                     "--":token.Decrement,
                     "?":token.QuestionMark,
-                    ":":token.Colon}
+                    ":":token.Colon,
+                    ",":token.Comma}
         self.keywords = {'int':token.Int,
                         'return':token.Return,
                         'if':token.If,

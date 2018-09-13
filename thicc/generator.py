@@ -71,8 +71,8 @@ class Generator():
     def generate(self, ast):
         if(isinstance(ast, symbol.Program)):
             code = self.generateProgram(ast)
-        elif(isinstance(ast, symbol.Function)):
-            code = self.generateFunction(ast)
+        elif(isinstance(ast, symbol.Declaration)):
+            code = self.generateDeclaration(ast)
         elif(isinstance(ast, symbol.Statement)):
             code = self.generateStatement(ast)
         else:
@@ -83,7 +83,9 @@ class Generator():
         return codeStr
 
     def generateProgram(self, prog):
-        code = self.generateFunction(prog.function)
+        code = []
+        for decl in prog.declarations:
+            code += self.generateDeclaration(decl, None)
         return code
 
     def generateFunction(self, func):
@@ -143,6 +145,8 @@ class Generator():
             declare  = [self.instruct("push","%rax")]
             cont.addVar(declaration.id)
             code = init+declare
+        elif isinstance(declaration, symbol.FunctionD):
+            code = self.generateFunction(declaration)
         else:
             raise UnknownDeclarationError(declaration)
 

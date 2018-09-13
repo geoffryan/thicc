@@ -2,69 +2,6 @@ from . import token
 from . import symbol
 from . import exception
 
-class ParseError(exception.ThiccError):
-    pass
-
-class InvalidExpressionError(ParseError):
-    def __init__(self, expr, message="Invalid Expression"):
-        self.expression = expr
-        self.message = message
-
-class InvalidDeclarationError(ParseError):
-    def __init__(self, expr, message="Invalid Declaration"):
-        self.expression = expr
-        self.message = message
-
-class InvalidStatementError(ParseError):
-    def __init__(self, expr, message="Invalid Statement"):
-        self.expression = expr
-        self.message = message
-
-class InvalidFunctionError(ParseError):
-    def __init__(self, expr, message="Invalid Function"):
-        self.expression = expr
-        self.message = message
-
-class InvalidProgramError(ParseError):
-    def __init__(self, expr, message="Invalid Program"):
-        self.expression = expr
-        self.message = message
-
-class ExpectedParenthesesError(ParseError):
-    def __init__(self, expr, message="Expected a ("):
-        self.expression = expr
-        self.message = message
-
-class UnmatchedParenthesesError(ParseError):
-    def __init__(self, expr, message="Parentheses block is not closed"):
-        self.expression = expr
-        self.message = message
-
-class UnmatchedBraceError(ParseError):
-    def __init__(self, expr="", message="Expected a }"):
-        self.expression = "No }"
-        self.message = message
-
-class InvalidVariableRefError(ParseError):
-    def __init__(self, expr, message="Invalid Variable ref"):
-        self.expression = expr
-        self.message = message
-
-class MissingSemicolonError(ParseError):
-    def __init__(self, expr, message="Missing ;"):
-        self.expression = expr
-        self.message = message
-
-class IncompleteConditionalExpressionError(ParseError):
-    def __init__(self, expr, message="Missing ?"):
-        self.expression = expr
-        self.message = message
-
-class TrailingCharactersProgramError(ParseError):
-    def __init__(self, expr, message="Trailing characters in program"):
-        self.expression = expr
-        self.message = message
-
 class Parser():
 
     def __init__(self):
@@ -86,36 +23,19 @@ class Parser():
 
         ast = self.parseProgram(reverseTokens)
 
+        ast.validate()
+
         return ast
 
     def parseProgram(self, tokens):
-        func = self.parseFunction(tokens)
 
-        if len(tokens) != 0:
-            raise TrailingCharactersProgramError(tokens[-1].val)
+        decs = []
+        while len(tokens) > 0:
+            decs.append(self.parseDeclaration(tokens))
 
-        return symbol.Program(func)
+        prog = symbol.Program(decs)
 
-    def parseFunction(self, tokens):
-        tok = tokens.pop()
-        if not isinstance(tok, token.Int):
-            raise InvalidFunctionError(tok.val)
-
-        ident = tokens.pop()
-        if not isinstance(ident, token.Identifier):
-            raise InvalidFunctionError(tok.val)
-
-        tok = tokens.pop()
-        if not isinstance(tok, token.OpenParentheses):
-            raise InvalidFunctionError(tok.val)
-
-        tok = tokens.pop()
-        if not isinstance(tok, token.ClosedParentheses):
-            raise InvalidFunctionError(tok.val)
-
-        body = self.parseCompoundStatement(tokens)
-
-        return symbol.Function(ident, body)
+        return prog
 
     def parseBlock(self, tokens):
         # return a list of statements.  If the block begins with a brace "{"
@@ -135,17 +55,17 @@ class Parser():
         
         tok = tokens.pop()
         if not isinstance(tok, token.OpenBrace):
-            raise InvalidStatementError(tok)
+            raise symbol.InvalidStatementError(tok)
 
         if len(tokens) == 0:
-            raise UnmatchedBraceError()
+            raise symbol.UnmatchedBraceError()
 
         items = []
         while not isinstance(tokens[-1], token.ClosedBrace):
             item = self.parseBlockItem(tokens)
             items.append(item)
             if len(tokens)==0:
-                raise UnmatchedBraceError()
+                raise symbol.UnmatchedBraceError()
         tokens.pop()    #Remove }
 
         stmnt = symbol.CompoundS(items)
@@ -162,27 +82,76 @@ class Parser():
 
     def parseDeclaration(self, tokens):
         
-        tok = tokens.pop()
-        if not isinstance(tok, token.Int):
-            raise InvalidDeclarationError(tok)
+        typetok = tokens[-1]
+        if not isinstance(typetok, token.Int):
+            raise symbol.InvalidDeclarationError(typetok)
+
+        idTok = tokens[-2]
+        if not isinstance(idTok, token.Identifier):
+            raise symbol.InvalidDeclarationError(tok.val)
+
+        tok = tokens[-3]
+        if isinstance(tok, token.OpenParentheses):
+            dec = self.parseFunctionDec(tokens)
+        elif isinstance(tok, token.Assign) or isinstance(tok, token.Semicolon):
+            dec = self.parseVariableDec(tokens)
+        else:
+            raise symbol.MissingSemicolonError(tok)
+        
+        return dec
+
+    def parseVariableDec(self, tokens):
+        
+        typetok = tokens.pop()
+        if not isinstance(typetok, token.Int):
+            raise symbol.InvalidDeclarationError(tok)
 
         idTok = tokens.pop()
         if not isinstance(idTok, token.Identifier):
-            raise InvalidDeclarationError(tok.val)
+            raise symbol.InvalidDeclarationError(tok.val)
 
+        tok = tokens[-1]
         if isinstance(tokens[-1], token.Assign):
             tokens.pop()
             expr = self.parseExpression(tokens)     
         else:
             expr = None
 
-        stmnt = symbol.VariableD(idTok, expr)
+        dec = symbol.VariableD(idTok, expr)
 
         endTok = tokens.pop()
         if not isinstance(endTok, token.Semicolon):
-            raise MissingSemicolonError(tok)
+            raise symbol.MissingSemicolonError(tok)
         
-        return stmnt
+        return dec
+
+    def parseFunctionDec(self, tokens):
+        tok = tokens.pop()
+        if not isinstance(tok, token.Int):
+            raise symbol.InvalidFunctionError(tok.val)
+
+        ident = tokens.pop()
+        if not isinstance(ident, token.Identifier):
+            raise symbol.InvalidFunctionError(tok.val)
+
+        tok = tokens.pop()
+        if not isinstance(tok, token.OpenParentheses):
+            raise symbol.InvalidFunctionError(tok.val)
+
+        tok = tokens.pop()
+        if not isinstance(tok, token.ClosedParentheses):
+            raise symbol.InvalidFunctionError(tok.val)
+
+        tok = tokens[-1]
+        if isinstance(tok, token.OpenBrace):
+            body = self.parseCompoundStatement(tokens)
+        elif isinstance(tok, token.Semicolon):
+            tokens.pop()
+            body = None
+        else:
+            raise symbol.InvalidFunctionError(tok)
+
+        return symbol.FunctionD(ident, None, body)
 
 
     def parseStatement(self, tokens):
@@ -195,7 +164,7 @@ class Parser():
 
             tok = tokens.pop()
             if not isinstance(tok, token.Semicolon):
-                raise MissingSemicolonError(tok.val)
+                raise symbol.MissingSemicolonError(tok.val)
         #Maybe a conditional
         elif isinstance(tok, token.If):
             stmnt = self.parseConditionalStmnt(tokens)
@@ -222,7 +191,7 @@ class Parser():
 
             tok = tokens.pop()
             if not isinstance(tok, token.Semicolon):
-                raise MissingSemicolonError(tok.val)
+                raise symbol.MissingSemicolonError(tok.val)
 
         return stmnt
 
@@ -230,17 +199,17 @@ class Parser():
 
         tok = tokens.pop()
         if not isinstance(tok, token.If):
-            raise InvalidStatementError(tok)
+            raise symbol.InvalidStatementError(tok)
 
         tok = tokens.pop()
         if not isinstance(tok, token.OpenParentheses):
-            raise ExpectedParenthesesError(tok)
+            raise symbol.ExpectedParenthesesError(tok)
         
         cond = self.parseExpression(tokens)
         
         tok = tokens.pop()
         if not isinstance(tok, token.ClosedParentheses):
-            raise UnmatchedParenthesesError(tok)
+            raise symbol.UnmatchedParenthesesError(tok)
         
         stmntTrue = self.parseStatement(tokens)
 
@@ -257,49 +226,49 @@ class Parser():
     def parseNullStatement(self, tokens):
         tok = tokens.pop()
         if not isinstance(tok, token.Semicolon):
-            raise MissingSemicolonError(tok)
+            raise symbol.MissingSemicolonError(tok)
         return symbol.ExpressionS(None)
 
     def parseBreakStatement(self, tokens):
         if len(tokens) < 2:
-            raise InvalidStatementError(tokens[-1])
+            raise symbol.InvalidStatementError(tokens[-1])
         tok1 = tokens.pop()
         tok2 = tokens.pop()
         if not isinstance(tok1, token.Break):
-            raise InvalidStatementError(tok)
+            raise symbol.InvalidStatementError(tok)
         if not isinstance(tok2, token.Semicolon):
-            raise MissingSemicolonError(tok)
+            raise symbol.MissingSemicolonError(tok)
         return symbol.BreakS()
 
     def parseContinueStatement(self, tokens):
         if len(tokens) < 2:
-            raise InvalidStatementError(tokens[-1])
+            raise symbol.InvalidStatementError(tokens[-1])
         tok1 = tokens.pop()
         tok2 = tokens.pop()
         if not isinstance(tok1, token.Continue):
-            raise InvalidStatementError(tok)
+            raise symbol.InvalidStatementError(tok)
         if not isinstance(tok2, token.Semicolon):
-            raise MissingSemicolonError(tok)
+            raise symbol.MissingSemicolonError(tok)
         return symbol.ContinueS()
 
     def parseWhileStatement(self, tokens):
         if len(tokens) < 3:
-            raise InvalidStatementError(tokens[-1])
+            raise symbol.InvalidStatementError(tokens[-1])
         tok1 = tokens.pop()
         tok2 = tokens.pop()
         if not isinstance(tok1, token.While):
-            raise InvalidStatementError(tok1)
+            raise symbol.InvalidStatementError(tok1)
         if not isinstance(tok2, token.OpenParentheses):
-            raise ExpectedParenthesesError(tok2)
+            raise symbol.ExpectedParenthesesError(tok2)
         
         cond = self.parseExpression(tokens)
 
         if len(tokens) < 2:
-            raise InvalidStatementError(tokens[-1])
+            raise symbol.InvalidStatementError(tokens[-1])
 
         tok3 = tokens.pop()
         if not isinstance(tok3, token.ClosedParentheses):
-            raise UnmatchedParenthesesError(tok3)
+            raise symbol.UnmatchedParenthesesError(tok3)
 
         body = self.parseStatement(tokens)
 
@@ -309,34 +278,34 @@ class Parser():
 
     def parseDoStatement(self, tokens):
         if len(tokens) < 2:
-            raise InvalidStatementError(tokens[-1])
+            raise symbol.InvalidStatementError(tokens[-1])
         tok1 = tokens.pop()
         if not isinstance(tok1, token.Do):
-            raise InvalidStatementError(tok1)
+            raise symbol.InvalidStatementError(tok1)
         
         body = self.parseStatement(tokens)
 
         if len(tokens) < 3:
-            raise InvalidStatementError(tokens[-1])
+            raise symbol.InvalidStatementError(tokens[-1])
         
         tok2 = tokens.pop()
         tok3 = tokens.pop()
         if not isinstance(tok2, token.While):
-            raise InvalidStatementError(tok2)
+            raise symbol.InvalidStatementError(tok2)
         if not isinstance(tok3, token.OpenParentheses):
-            raise ExpectedParenthesesError(tok3)
+            raise symbol.ExpectedParenthesesError(tok3)
 
         cond = self.parseExpression(tokens)
 
         if len(tokens) < 2:
-            raise InvalidStatementError(tokens[-1])
+            raise symbol.InvalidStatementError(tokens[-1])
         
         tok4 = tokens.pop()
         tok5 = tokens.pop()
         if not isinstance(tok4, token.ClosedParentheses):
-            raise UnmatchedParenthesesError(tok4)
+            raise symbol.UnmatchedParenthesesError(tok4)
         if not isinstance(tok5, token.Semicolon):
-            raise MissingSemicolonError(tok5)
+            raise symbol.MissingSemicolonError(tok5)
 
         stmnt = symbol.DoS(cond, body)
 
@@ -345,11 +314,11 @@ class Parser():
     def parseForStatement(self, tokens):
         tok = tokens.pop()
         if not isinstance(tok, token.For):
-            raise InvalidStatementError(tok)
+            raise symbol.InvalidStatementError(tok)
 
         tok = tokens.pop()
         if not isinstance(tok, token.OpenParentheses):
-            raise ExpectedParenthesesError(tok)
+            raise symbol.ExpectedParenthesesError(tok)
 
         tok = tokens[-1]
 
@@ -362,7 +331,7 @@ class Parser():
             init = self.parseExpression(tokens)
             tok = tokens.pop()
             if not isinstance(tok, token.Semicolon):
-                raise MissingSemicolonError(tok)
+                raise symbol.MissingSemicolonError(tok)
 
         tok = tokens[-1]
         if isinstance(tok, token.Semicolon):
@@ -372,7 +341,7 @@ class Parser():
             cond = self.parseExpression(tokens)
             tok = tokens.pop()
             if not isinstance(tok, token.Semicolon):
-                raise MissingSemicolonError(tok)
+                raise symbol.MissingSemicolonError(tok)
         
         tok = tokens[-1]
         if isinstance(tok, token.ClosedParentheses):
@@ -382,7 +351,7 @@ class Parser():
             post = self.parseExpression(tokens)
             tok = tokens.pop()
             if not isinstance(tok, token.ClosedParentheses):
-                raise UnmatchedParenthesesError(tok)
+                raise symbol.UnmatchedParenthesesError(tok)
 
         body = self.parseStatement(tokens)
 
@@ -421,7 +390,7 @@ class Parser():
 
             tok = tokens.pop()
             if not isinstance(tok, token.TernaryB):
-                raise IncompleteConditionalExpressionError(tok)
+                raise symbol.IncompleteConditionalExpressionError(tok)
 
             exprFalse = self.parseConditionalExpr(tokens)
 
@@ -457,7 +426,7 @@ class Parser():
             fac = self.parseExpression(tokens)
             tok = tokens.pop()
             if not isinstance(tok, token.ClosedParentheses):
-                raise UnmatchedParthenthesesError(tok.val)
+                raise symbol.UnmatchedParthenthesesError(tok.val)
             return fac
         elif isinstance(tok, token.UnaryOp):
             if isinstance(tok, token.IncrementOp):
@@ -478,14 +447,14 @@ class Parser():
                 else:
                     tokens.append(tok)
             return var
-        raise InvalidExpressionError(tok.val)
+        raise symbol.InvalidExpressionError(tok.val)
 
     def parseVariable(self, tokens):
         tok = tokens.pop()
         if isinstance(tok, token.Identifier):
             expr = symbol.VarRefE(tok)
         else:
-            raise InvalidVariableRefError(tok.val)
+            raise symbol.InvalidVariableRefError(tok.val)
         return expr
 
 
